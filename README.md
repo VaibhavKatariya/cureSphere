@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# CureSphere  
 
-## Getting Started
+CureSphere is an AI-powered healthcare platform designed to revolutionize disease detection and preventive care. By leveraging advanced *AI technologies, **Next.js* for seamless development, *Firebase* for authentication and database management, and a *Symptom Checker API*, CureSphere empowers individuals to assess their health and take proactive steps toward well-being.  
 
-First, run the development server:
 
-```bash
+## 🚀 *Features*  
+
+- *AI-Based Symptom Checker*  
+  Input symptoms to receive an AI-driven analysis and potential health insights.  
+
+- *Predictive Health Risk Analysis*  
+  Get insights into possible health risks based on lifestyle, medical history, and symptoms.  
+
+- *Personalized Health Recommendations*  
+  Receive actionable tips to improve health and reduce potential risks.  
+
+- *Telemedicine Integration*  
+  Connect with healthcare professionals for consultations (planned future enhancement).  
+
+## 🛠 *Tech Stack*  
+
+- *Frontend and Backend Framework*: [Next.js](https://nextjs.org/)  
+- *Authentication and Database*: [Firebase](https://firebase.google.com/)  
+- *Symptom Checker*: Symptom Checker API  
+
+
+
+## 📋 *Installation and Setup*  
+
+Follow these steps to set up CureSphere on your local system:
+
+### 1. *Clone the Repository*  
+bash
+git clone https://github.com/vaibhavkatariya/curesphere.git
+cd curesphere
+
+
+### 2. *Install Dependencies*  
+Install the required dependencies for the project:  
+bash
+npm install
+
+
+### 3. *Set Up Firebase*  
+- Go to [Firebase Console](https://console.firebase.google.com/) and create a new project.  
+- Enable *Authentication* and *Firestore Database* in your project settings.  
+- Download the firebaseConfig file and replace it in the /config/firebase.js file in your project.  
+
+### 4. *Environment Variables*  
+Create a .env.local file in the root directory and add the following variables:  
+
+NEXT_PUBLIC_FIREBASE_API_KEY=<your-api-key>
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=<your-auth-domain>
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=<your-project-id>
+NEXT_PUBLIC_SYMPTOM_API_URL=<symptom-checker-api-url>
+NEXT_PUBLIC_SYMPTOM_API_KEY=<your-api-key>
+
+
+### 5. *Start the Development Server*  
+Run the development server:  
+bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+  
+Visit http://localhost:3000 to view the application.  
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 🔒 *Authentication*  
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+CureSphere uses *Firebase Authentication* to manage user signups and logins. It supports:  
+- *Email/Password Authentication*  
+- Future enhancements: Google and social logins.  
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 📅 *Roadmap*  
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Current Features:
+- Symptom Checker Integration
+- Firebase Authentication and Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Upcoming Enhancements:
+- Predictive Health Risk Models
+- Telemedicine Support
+- Advanced Data Visualization for Health Trends
+- Best Insurance Recommendations
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 👨‍💻 *Contributing*  
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+We welcome contributions to enhance CureSphere! Follow these steps:  
+1. Fork the repository.  
+2. Create a new branch: git checkout -b feature-xyz.  
+3. Commit changes: git commit -m 'Add new feature'.  
+4. Push the branch: git push origin feature-xyz.  
+5. Open a Pull Request.  
+
+---
+
+## ⚖ *License*  
+
+This project is licensed under the *MIT License*.  
+
+---
+
+## 🏆 *Acknowledgments*  
+
+- Hacking Winters Hackathon at *Jaypee Institute of Information technology*.  
+- Open-source libraries and APIs used in this project.  
+
+---
+
+## 📞 *Contact*  
+
+For queries, feel free to reach out:  
+- *Developers*: 
+  - Vaibhav Katariya
+  - Yasharth Singh
+  - Rajat Dagar
+  - Rochak Kumar
+  - Lakshay Gupta
