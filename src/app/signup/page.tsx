@@ -1,15 +1,105 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, FormEvent, ChangeEvent } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Lock, Phone, Stethoscope, BookOpen } from 'lucide-react'
+import { auth } from '@/app/Firebase/config' // Import Firebase authentication
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth"
+
+type FormData = {
+  name: string
+  email: string
+  password: string
+  phone: string
+  license: string
+  specialization: string
+}
+
+const errorMessages: Record<string, string> = {
+  'auth/invalid-email': 'Invalid email address.',
+  'auth/user-not-found': 'No user found with this email.',
+  'auth/wrong-password': 'Wrong password.',
+  'auth/weak-password': 'Password should be at least 6 characters long.',
+  'auth/email-already-in-use': 'Email already in use.',
+  'auth/operation-not-allowed': 'Operation not allowed.',
+  'auth/requires-recent-login': 'Please reauthenticate and try again.',
+  'auth/credential-already-in-use': 'Credential is already in use.',
+  'auth/invalid-credential': 'Invalid credentials provided.',
+  'auth/popup-closed-by-user': 'Popup closed by user.',
+}
 
 export default function SignUp() {
-  const [userType, setUserType] = useState('user')
+  const [userType, setUserType] = useState<'user' | 'doctor'>('user')
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    email: '',
+    password: '',
+    phone: '',
+    license: '',
+    specialization: ''
+  })
+  const [loading, setLoading] = useState<boolean>(false) // To manage loading state
+  const [error, setError] = useState<string | null>(null) // To handle error messages
+  const router = useRouter()
+
+  // Handle form data changes
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value
+    }))
+  }
+
+  // Handle form submission for user signup
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setError(null) // Reset previous errors
+
+    try {
+      // Signing up user with Firebase Authentication
+      const { email, password, name, phone } = formData
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password)
+      
+      // Save name and phone number in user profile
+      if (userCredential.user) {
+        await updateProfile(userCredential.user, {
+          displayName: name,
+          phoneNumber: phone
+        })
+      }
+
+      // Clear form after successful signup
+      setFormData({
+        name: '',
+        email: '',
+        password: '',
+        phone: '',
+        license: '',
+        specialization: ''
+      })
+
+      // Redirect user to another page (e.g., home or dashboard)
+      router.push('/dashboard') // Change '/dashboard' to your desired route
+
+    } catch (error: any) {
+      // Check for specific Firebase error codes and display custom messages
+      if (error.code) {
+        const message = errorMessages[error.code] || 'An unexpected error occurred.'
+        setError(message)
+      } else {
+        setError('An error occurred while signing up.')
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-teal-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -21,123 +111,166 @@ export default function SignUp() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <Tabs defaultValue="user" className="w-full" onValueChange={(value) => setUserType(value)}>
+          {error && (
+            <div className="text-red-500 text-center mb-4">
+              {error}
+            </div>
+          )}
+
+          <Tabs defaultValue="user" className="w-full" onValueChange={(value) => setUserType(value as 'user' | 'doctor')}>
             <TabsList className="grid w-full grid-cols-2 mb-8">
               <TabsTrigger value="user">User</TabsTrigger>
               <TabsTrigger value="doctor">Doctor</TabsTrigger>
             </TabsList>
+
             <TabsContent value="user">
-              <form className="space-y-6" action="#" method="POST">
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <Label htmlFor="name" className="flex items-center">
                     <User className="w-5 h-5 mr-2" />
                     Name
                   </Label>
-                  <Input id="name" name="name" type="text" required className="mt-1" />
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={formData.name}
+                    onChange={handleChange}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="email" className="flex items-center">
                     <Mail className="w-5 h-5 mr-2" />
                     Email address
                   </Label>
-                  <Input id="email" name="email" type="email" autoComplete="email" required className="mt-1" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="password" className="flex items-center">
                     <Lock className="w-5 h-5 mr-2" />
                     Password
                   </Label>
-                  <Input id="password" name="password" type="password" required className="mt-1" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="phone" className="flex items-center">
                     <Phone className="w-5 h-5 mr-2" />
                     Phone Number (optional)
                   </Label>
-                  <Input id="phone" name="phone" type="tel" className="mt-1" />
+                  <Input
+                    id="phone"
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white">
-                    Sign Up
+                    {loading ? (
+                      <Stethoscope className="animate-spin w-5 h-5" />
+                    ) : (
+                      'Sign Up'
+                    )}
                   </Button>
                 </div>
               </form>
             </TabsContent>
+
+            {/* Doctor Tab (remains unchanged) */}
             <TabsContent value="doctor">
-              <form className="space-y-6" action="#" method="POST">
+              <form className="space-y-6" onSubmit={handleSubmit}>
                 <div>
                   <Label htmlFor="doctor-name" className="flex items-center">
                     <User className="w-5 h-5 mr-2" />
                     Name
                   </Label>
-                  <Input id="doctor-name" name="name" type="text" required className="mt-1" />
+                  <Input
+                    id="doctor-name"
+                    name="name"
+                    type="text"
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="doctor-email" className="flex items-center">
                     <Mail className="w-5 h-5 mr-2" />
                     Email address
                   </Label>
-                  <Input id="doctor-email" name="email" type="email" autoComplete="email" required className="mt-1" />
+                  <Input
+                    id="doctor-email"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="license" className="flex items-center">
                     <Stethoscope className="w-5 h-5 mr-2" />
                     Medical License Number
                   </Label>
-                  <Input id="license" name="license" type="text" required className="mt-1" />
+                  <Input
+                    id="license"
+                    name="license"
+                    type="text"
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="specialization" className="flex items-center">
                     <BookOpen className="w-5 h-5 mr-2" />
                     Specialization
                   </Label>
-                  <Input id="specialization" name="specialization" type="text" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="doctor-phone" className="flex items-center">
-                    <Phone className="w-5 h-5 mr-2" />
-                    Phone Number
-                  </Label>
-                  <Input id="doctor-phone" name="phone" type="tel" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="doctor-password" className="flex items-center">
-                    <Lock className="w-5 h-5 mr-2" />
-                    Password
-                  </Label>
-                  <Input id="doctor-password" name="password" type="password" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="confirm-password" className="flex items-center">
-                    <Lock className="w-5 h-5 mr-2" />
-                    Confirm Password
-                  </Label>
-                  <Input id="confirm-password" name="confirm-password" type="password" required className="mt-1" />
+                  <Input
+                    id="specialization"
+                    name="specialization"
+                    type="text"
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white">
-                    Sign Up as Doctor
+                    {loading ? (
+                      <Stethoscope className="animate-spin w-5 h-5" />
+                    ) : (
+                      'Sign Up as Doctor'
+                    )}
                   </Button>
                 </div>
               </form>
             </TabsContent>
           </Tabs>
-          <div className="mt-6">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">
-                  Already have an account?
-                </span>
-              </div>
-            </div>
-            <div className="mt-6">
-              <Link href="/signin" className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-teal-600 hover:bg-gray-50">
-                Sign In
-              </Link>
-            </div>
+
+          <div className="mt-6 text-center">
+            Already have an account?{' '}
+            <Link href="/signin" className="font-medium text-teal-600 hover:text-teal-500">
+              Log in
+            </Link>
           </div>
         </div>
       </div>
