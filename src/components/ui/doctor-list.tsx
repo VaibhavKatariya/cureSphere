@@ -456,6 +456,31 @@ const doctorsData = [
     avatar: "/placeholder.svg",
     availability: "Available",
   },
+  {id:51,
+    name: "efkjvh",
+    specialty: "Cardiology",
+    experience: "12 years",
+    rating: 4.7,
+    avatar: "/placeholder.svg",
+    availability: "Busy",
+  },
+  {
+    id: 52,
+    name: "CICR",
+    specialty: "Orthopedics",
+    experience: "10 years",
+    rating: 4.9,
+    avatar: "/placeholder.svg",
+    availablity: "Available",
+  },{
+    id: 53,
+    name: "wqd  ",
+    specialty: "Neurology",
+    experience: "18 years",
+    rating: 4.6,
+    avatar: "/placeholder.svg",
+    availability: "Available",
+  }
 ];
 
 const specialties = [
