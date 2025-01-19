@@ -9,20 +9,9 @@ import { Calendar } from "@/components/ui/calendar"
 import { Badge } from "@/components/ui/badge"
 import { Check, X, Video, MessageSquare } from 'lucide-react'
 
-interface Appointment {
-  id: string
-  patientName: string
-  patientId: string
-  date: string
-  time: string
-  status: 'pending' | 'confirmed' | 'cancelled'
-  type: 'video' | 'chat'
-  symptoms: string
-}
-
-export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
-  const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+export default function DoctorAppointments({ doctorId }) {
+  const [appointments, setAppointments] = useState([])
+  const [selectedDate, setSelectedDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -37,9 +26,9 @@ export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
         where('date', '==', selectedDate.toISOString().split('T')[0])
       )
       const querySnapshot = await getDocs(q)
-      const appointmentsData: Appointment[] = []
+      const appointmentsData = []
       querySnapshot.forEach((doc) => {
-        appointmentsData.push({ id: doc.id, ...doc.data() } as Appointment)
+        appointmentsData.push({ id: doc.id, ...doc.data() })
       })
       setAppointments(appointmentsData.sort((a, b) => a.time.localeCompare(b.time)))
     } catch (error) {
@@ -49,7 +38,7 @@ export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
     }
   }
 
-  const updateAppointmentStatus = async (appointmentId: string, status: 'confirmed' | 'cancelled') => {
+  const updateAppointmentStatus = async (appointmentId, status) => {
     try {
       await updateDoc(doc(db, 'appointments', appointmentId), { status })
       fetchAppointments() // Refresh the list
