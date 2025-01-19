@@ -13,7 +13,7 @@ interface MedicineInfo {
   side_effects: string
 }
 
-export default function Prescription() {
+export default function MedicineSearch() {
   const [currentMedicine, setCurrentMedicine] = useState('')
   const [loading, setLoading] = useState(false)
   const [medicineInfo, setMedicineInfo] = useState<MedicineInfo[]>([])
@@ -71,7 +71,6 @@ export default function Prescription() {
               </div>
             </div>
 
-            {/* Medicine Information Display */}
             {loading && (
               <div className="text-center py-4">
                 <span className="text-teal-600">Loading medicine information...</span>
@@ -108,4 +107,4 @@ export default function Prescription() {
       </Card>
     </div>
   )
-}
+} 

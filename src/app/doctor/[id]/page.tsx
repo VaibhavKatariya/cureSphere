@@ -7,6 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { VideoIcon, MessageSquare, Star, Clock, Globe, DollarSign, GraduationCap } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 import { getFirestore, doc } from 'firebase/firestore';
 import { useDocument } from 'react-firebase-hooks/firestore'; // Hook from react-firebase-hooks
@@ -15,6 +16,7 @@ const db = getFirestore(); // Initialize Firestore
 export default function DoctorProfile() {
   const params = useParams();
   const [doctor, setDoctor] = useState(null);
+  const router = useRouter();
 
   // Fetching the document using useDocument hook
   const [value, loading, error] = useDocument(doc(db, 'doctors', params.id));
@@ -27,13 +29,13 @@ export default function DoctorProfile() {
 
   const handleChat = () => {
     if (doctor) {
-      window.location.href = `/chat/${doctor.id}`;
+      router.push(`/consultation/${doctor.id}`);
     }
   };
 
   const handleVideoCall = () => {
     if (doctor) {
-      window.location.href = `/video-call/${doctor.id}`;
+      router.push(`/consultation/${doctor.id}?call=true`);
     }
   };
 

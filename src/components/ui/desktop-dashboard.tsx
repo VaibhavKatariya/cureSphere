@@ -3,12 +3,20 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X } from 'lucide-react'
+import { Separator } from "@/components/ui/separator"
+import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X, LogOut, Pill } from 'lucide-react'
 import DoctorList from "@/components/ui/doctor-list"
 import PrescriptionViewer from "@/components/ui/prescription-viewer"
 import PremiumPlans from "./premium-plans"
+import { auth } from '@/app/Firebase/config'
+import Prescription from "@/components/doctor/prescription"
+import MedicineSearch from "@/components/shared/medicine-search"
 
 export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, userInfo, handleEdit, handleSave, handleCancel, handleChange }:any) {
+  const handleSignOut = () => {
+    auth.signOut()
+  }
+
   const renderContent = () => {
     switch(activeTab) {
       case 'dashboard':
@@ -160,10 +168,12 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
             </CardContent>
           </Card>
         )
+      case 'medicines':
+        return <MedicineSearch />
       case 'prescriptions':
-        return (<PrescriptionViewer />)
+        return (<Prescription />)
       
-        case 'Premium':
+      case 'Premium':
         return (<PremiumPlans />)
       default:
         return null
@@ -208,6 +218,14 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
           </Button>
           <Button
             variant="ghost"
+            className={`w-full justify-start ${activeTab === 'medicines' ? 'bg-teal-100 text-teal-800' : ''}`}
+            onClick={() => setActiveTab('medicines')}
+          >
+            <Pill className="mr-2 h-5 w-5" />
+            Medicines
+          </Button>
+          <Button
+            variant="ghost"
             className={`w-full justify-start ${activeTab === 'prescriptions' ? 'bg-teal-100 text-teal-800' : ''}`}
             onClick={() => setActiveTab('prescriptions')}
           >
@@ -223,6 +241,16 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
             Premium
           </Button>
           
+          <Separator className="my-4" />
+          
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={handleSignOut}
+          >
+            <LogOut className="mr-2 h-5 w-5" />
+            Sign Out
+          </Button>
         </nav>
       </div>
       {/* Main Content */}

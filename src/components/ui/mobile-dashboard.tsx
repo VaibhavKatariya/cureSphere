@@ -4,12 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X } from 'lucide-react'
+import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X, LogOut, Pill } from 'lucide-react'
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import DoctorList from "@/components/ui/doctor-list"
 import PrescriptionViewer from "@/components/ui/prescription-viewer"
 import PremiumPlans from "./premium-plans"
+import MedicineSearch from "@/components/shared/medicine-search"
+import { auth } from '@/app/Firebase/config'
 
 export default function MobileDashboard({ activeTab, setActiveTab, isEditing, userInfo, handleEdit, handleSave, handleCancel, handleChange }:any) {
+  const handleSignOut = () => {
+    auth.signOut()
+  }
+
   const renderContent = () => {
     switch(activeTab) {
       case 'dashboard':
@@ -19,6 +26,14 @@ export default function MobileDashboard({ activeTab, setActiveTab, isEditing, us
             <Card className="border-0 shadow-sm">
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base font-medium">Personal Information</CardTitle>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleSignOut} 
+                  className="text-red-500"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
                 {!isEditing ? (
                   <Button variant="ghost" size="icon" onClick={handleEdit} className="text-teal-500">
                     <Edit2 className="h-4 w-4" />
@@ -167,8 +182,10 @@ export default function MobileDashboard({ activeTab, setActiveTab, isEditing, us
         )
       case 'prescriptions':
         return (<PrescriptionViewer />)
-        case 'plans':
+      case 'plans':
         return (<PremiumPlans />)
+      case 'medicines':
+        return <MedicineSearch />
       default:
         return null
     }
@@ -226,8 +243,39 @@ export default function MobileDashboard({ activeTab, setActiveTab, isEditing, us
             <FileText className="h-5 w-5" />
             <span className="text-xs">Premium</span>
           </Button>
+          <Button
+            variant="ghost"
+            className={`flex flex-col items-center gap-1 ${activeTab === 'medicines' ? 'text-teal-500' : ''}`}
+            onClick={() => setActiveTab('medicines')}
+          >
+            <Pill className="h-5 w-5" />
+            <span className="text-xs">Medicines</span>
+          </Button>
         </div>
       </div>
+
+      <Sheet>
+        <SheetTrigger asChild>
+          {/* ... existing trigger ... */}
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64 p-0">
+          <nav className="space-y-2 p-4">
+            {/* ... existing nav buttons ... */}
+            <Button
+              variant="ghost"
+              className={`w-full justify-start ${activeTab === 'medicines' ? 'bg-teal-100 text-teal-800' : ''}`}
+              onClick={() => {
+                setActiveTab('medicines')
+                setIsOpen(false)
+              }}
+            >
+              <Pill className="mr-2 h-5 w-5" />
+              Medicines
+            </Button>
+            {/* ... other buttons ... */}
+          </nav>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
