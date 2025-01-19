@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { db } from '@/app/Firebase/config'
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc, arrayUnion } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react'
@@ -38,29 +38,44 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
   const peerConnection = useRef<RTCPeerConnection | null>(null)
 
   useEffect(() => {
-    let pc: RTCPeerConnection | null = null
-    let stream: MediaStream | null = null
-
-    const setupCall = async () => {
+    async function startCall() {
       try {
         // Get local stream
-        stream = await navigator.mediaDevices.getUserMedia({
+        const stream = await navigator.mediaDevices.getUserMedia({
           video: true,
           audio: true
         })
         setLocalStream(stream)
+
+        // Set up local video
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream
         }
 
-        // Create peer connection
-        pc = new RTCPeerConnection(servers)
+        // Create and set up peer connection
+        const pc = new RTCPeerConnection(servers)
         peerConnection.current = pc
 
-        // Add local stream tracks to peer connection
+        // Add ICE candidate handling
+        pc.onicecandidate = async (event) => {
+          if (event.candidate) {
+            await updateDoc(doc(db, 'calls', callId), {
+              [`${currentUser.uid}_ice`]: arrayUnion(JSON.stringify(event.candidate))
+            })
+          }
+        }
+
+        // Add tracks to peer connection
         stream.getTracks().forEach(track => {
-          if (pc) pc.addTrack(track, stream!)
+          pc.addTrack(track, stream)
         })
+
+        // Set up remote video
+        const remoteStream = new MediaStream()
+        setRemoteStream(remoteStream)
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStream
+        }
 
         // Handle incoming tracks
         pc.ontrack = (event) => {
@@ -69,7 +84,7 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
           }
         }
 
-        // Listen for call status and handle signaling
+        // Listen for call status changes
         const unsubscribe = onSnapshot(doc(db, 'calls', callId), async (snapshot) => {
           const data = snapshot.data()
           if (!data) return
@@ -78,58 +93,59 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
 
           try {
             if (isDoctor && data.status === 'accepted' && !data.offer) {
-              // Doctor creates and sends offer
-              const offer = await pc!.createOffer()
-              await pc!.setLocalDescription(offer)
+              // Create and send offer
+              const offer = await pc.createOffer({
+                offerToReceiveAudio: true,
+                offerToReceiveVideo: true
+              })
+              await pc.setLocalDescription(offer)
               await updateDoc(doc(db, 'calls', callId), {
                 offer: { type: offer.type, sdp: offer.sdp }
               })
             }
 
-            if (!isDoctor && data.offer && !pc!.currentRemoteDescription) {
-              // User receives offer and sends answer
-              await pc!.setRemoteDescription(new RTCSessionDescription(data.offer))
-              const answer = await pc!.createAnswer()
-              await pc!.setLocalDescription(answer)
+            if (!isDoctor && data.offer && !pc.currentRemoteDescription) {
+              // Handle offer and create answer
+              await pc.setRemoteDescription(new RTCSessionDescription(data.offer))
+              const answer = await pc.createAnswer()
+              await pc.setLocalDescription(answer)
               await updateDoc(doc(db, 'calls', callId), {
                 answer: { type: answer.type, sdp: answer.sdp }
               })
             }
 
-            if (isDoctor && data.answer && !pc!.currentRemoteDescription) {
-              // Doctor receives answer
-              await pc!.setRemoteDescription(new RTCSessionDescription(data.answer))
+            if (isDoctor && data.answer && !pc.currentRemoteDescription) {
+              // Handle answer
+              await pc.setRemoteDescription(new RTCSessionDescription(data.answer))
+            }
+
+            // Handle ICE candidates
+            const otherUserId = isDoctor ? otherUser.id : currentUser.uid
+            const candidates = data[`${otherUserId}_ice`] || []
+            if (Array.isArray(candidates)) {
+              for (const iceString of candidates) {
+                if (pc.remoteDescription) {
+                  await pc.addIceCandidate(new RTCIceCandidate(JSON.parse(iceString)))
+                }
+              }
             }
           } catch (error) {
-            console.error('Error during signaling:', error)
+            console.error('Error during call setup:', error)
           }
         })
 
         return () => {
           unsubscribe()
-          if (stream) {
-            stream.getTracks().forEach(track => track.stop())
-          }
-          if (pc) {
-            pc.close()
-          }
+          stream.getTracks().forEach(track => track.stop())
+          pc.close()
         }
       } catch (error) {
-        console.error('Error setting up call:', error)
+        console.error('Error starting call:', error)
       }
     }
 
-    setupCall()
-
-    return () => {
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop())
-      }
-      if (pc) {
-        pc.close()
-      }
-    }
-  }, [callId, isDoctor])
+    startCall()
+  }, [callId, isDoctor, currentUser.uid, otherUser.id])
 
   const toggleMute = () => {
     if (localStream) {

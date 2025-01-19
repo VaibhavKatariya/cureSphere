@@ -17,6 +17,7 @@ import NotificationsList from  "@/components/doctor/notifications-list"
 import DoctorPatients from '@/components/doctor/patients'
 import DoctorChats from '@/components/doctor/chats'
 import DoctorSettings from '@/components/doctor/settings'
+import { updateDoctorStatus } from '@/lib/utils/update-doctor-status'
 
 export default function DoctorDashboard() {
   const [user] = useAuthState(auth)
@@ -44,6 +45,20 @@ export default function DoctorDashboard() {
 
     fetchDoctorData()
   }, [user])
+
+  useEffect(() => {
+    if (!user?.uid) return
+    
+    // Update status immediately
+    updateDoctorStatus(user.uid)
+    
+    // Update status every 5 minutes
+    const interval = setInterval(() => {
+      updateDoctorStatus(user.uid)
+    }, 5 * 60 * 1000)
+    
+    return () => clearInterval(interval)
+  }, [user?.uid])
 
   if (!user) {
     router.push('/doctor/signin')
@@ -139,12 +154,12 @@ export default function DoctorDashboard() {
             <Prescription />
           </TabsContent>
 
-          {/* <TabsContent value="patients">
-            <DoctorPatients doctorId={user.uid} />
-          </TabsContent>
-
           <TabsContent value="chats">
             <DoctorChats doctorId={user.uid} />
+          </TabsContent>
+
+          {/* <TabsContent value="patients">
+            <DoctorPatients doctorId={user.uid} />
           </TabsContent>
 
           <TabsContent value="settings">
