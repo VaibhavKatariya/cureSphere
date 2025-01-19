@@ -25,7 +25,7 @@ export default function Login() {
     }
   }, [authUser, router])
 
-  const handleSignIn = async (e) => {
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('') 
 
