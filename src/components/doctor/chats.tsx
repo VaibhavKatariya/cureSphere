@@ -2,121 +2,120 @@
 
 import { useState, useEffect } from 'react'
 import { db } from '@/app/Firebase/config'
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { useRouter } from 'next/navigation'
-import { MessageSquare, Video } from 'lucide-react'
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore'
+import { Card, CardContent } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { formatDistanceToNow } from 'date-fns'
+import ChatWindow from '@/components/chat/chat-window'
 
-interface ChatSession {
+interface Chat {
   id: string
-  patientId: string
-  patientName: string
+  userId: string
+  userName: string
+  userAvatar: string
   lastMessage: string
-  lastMessageTime: string
+  lastMessageTime: Date
   unreadCount: number
 }
 
 export default function DoctorChats({ doctorId }: { doctorId: string }) {
-  const [chatSessions, setChatSessions] = useState<ChatSession[]>([])
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [chats, setChats] = useState<Chat[]>([])
+  const [selectedChat, setSelectedChat] = useState<Chat | null>(null)
 
   useEffect(() => {
-    fetchChatSessions()
-  }, [])
-
-  const fetchChatSessions = async () => {
-    try {
-      const q = query(
+    // Listen for active chats
+    const unsubscribe = onSnapshot(
+      query(
         collection(db, 'chats'),
-        where('doctorId', '==', doctorId),
+        where('participants', 'array-contains', doctorId),
         orderBy('lastMessageTime', 'desc')
-      )
-      const querySnapshot = await getDocs(q)
-      const sessionsData: ChatSession[] = []
-      
-      for (const doc of querySnapshot.docs) {
-        const data = doc.data()
-        // Fetch patient name
-        const patientDoc = await getDocs(query(
-          collection(db, 'users'),
-          where('uid', '==', data.patientId)
-        ))
-        if (!patientDoc.empty) {
-          sessionsData.push({
+      ),
+      (snapshot) => {
+        const chatData = snapshot.docs.map(doc => {
+          const data = doc.data()
+          const otherParticipantId = data.participants.find((id: string) => id !== doctorId)
+          const otherParticipant = data.participantDetails[otherParticipantId]
+          
+          return {
             id: doc.id,
-            patientId: data.patientId,
-            patientName: patientDoc.docs[0].data().name,
-            lastMessage: data.lastMessage,
-            lastMessageTime: data.lastMessageTime,
-            unreadCount: data.unreadCount || 0
-          })
-        }
+            userId: otherParticipantId,
+            userName: otherParticipant.name,
+            userAvatar: otherParticipant.avatar,
+            lastMessage: data.lastMessage || '',
+            lastMessageTime: data.lastMessageTime?.toDate() || new Date(),
+            unreadCount: data[`${doctorId}UnreadCount`] || 0
+          }
+        })
+        setChats(chatData)
       }
-      setChatSessions(sessionsData)
-    } catch (error) {
-      console.error('Error fetching chat sessions:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+    )
 
-  const handleChatClick = (chatId: string) => {
-    router.push(`/chat/${chatId}`)
-  }
-
-  const handleVideoCall = (patientId: string) => {
-    router.push(`/video-call/${patientId}`)
-  }
+    return () => unsubscribe()
+  }, [doctorId])
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-medium">Active Conversations</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <div>Loading chats...</div>
-        ) : chatSessions.length === 0 ? (
-          <div className="text-center text-gray-500 py-8">
-            No active conversations
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {chatSessions.map((session) => (
+    <div className="grid grid-cols-3 gap-4 h-[600px]">
+      {/* Chat List */}
+      <Card className="col-span-1">
+        <ScrollArea className="h-[600px]">
+          <CardContent className="p-4 space-y-4">
+            {chats.map((chat) => (
               <div
-                key={session.id}
-                className="flex items-center justify-between p-4 border rounded-lg"
+                key={chat.id}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors
+                  ${selectedChat?.id === chat.id ? 'bg-teal-50 border-l-4 border-teal-500' : ''}`}
+                onClick={() => setSelectedChat(chat)}
               >
-                <div className="flex-1">
-                  <h3 className="font-medium">{session.patientName}</h3>
-                  <p className="text-sm text-gray-500">{session.lastMessage}</p>
-                  <p className="text-xs text-gray-400">
-                    {new Date(session.lastMessageTime).toLocaleString()}
-                  </p>
+                <Avatar>
+                  <AvatarImage src={chat.userAvatar} alt={chat.userName} />
+                  <AvatarFallback>
+                    {chat.userName.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium truncate">{chat.userName}</p>
+                    <span className="text-xs text-gray-500">
+                      {formatDistanceToNow(chat.lastMessageTime, { addSuffix: true })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
                 </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleChatClick(session.id)}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleVideoCall(session.patientId)}
-                  >
-                    <Video className="h-4 w-4" />
-                  </Button>
-                </div>
+                {chat.unreadCount > 0 && (
+                  <span className="bg-teal-500 text-white text-xs px-2 py-1 rounded-full">
+                    {chat.unreadCount}
+                  </span>
+                )}
               </div>
             ))}
+            {chats.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No active chats
+              </div>
+            )}
+          </CardContent>
+        </ScrollArea>
+      </Card>
+
+      {/* Chat Window */}
+      <Card className="col-span-2">
+        {selectedChat ? (
+          <ChatWindow
+            chatId={selectedChat.id}
+            currentUser={{ id: doctorId, role: 'doctor' }}
+            otherUser={{
+              id: selectedChat.userId,
+              name: selectedChat.userName,
+              avatar: selectedChat.userAvatar
+            }}
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center text-gray-500">
+            Select a chat to start messaging
           </div>
         )}
-      </CardContent>
-    </Card>
+      </Card>
+    </div>
   )
 } 

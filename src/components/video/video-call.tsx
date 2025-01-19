@@ -2,17 +2,28 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { db } from '@/app/Firebase/config'
-import { doc, setDoc, onSnapshot, updateDoc, deleteDoc, arrayUnion, serverTimestamp } from 'firebase/firestore'
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from 'lucide-react'
+
+const servers = {
+  iceServers: [
+    {
+      urls: [
+        'stun:stun1.l.google.com:19302',
+        'stun:stun2.l.google.com:19302',
+      ],
+    },
+  ],
+}
 
 interface VideoCallProps {
   callId: string
   currentUser: any
   otherUser: any
   onEndCall: () => void
-  isDoctor?: boolean
+  isDoctor: boolean
 }
 
 export default function VideoCall({ callId, currentUser, otherUser, onEndCall, isDoctor }: VideoCallProps) {
@@ -20,123 +31,105 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
   const [isMuted, setIsMuted] = useState(false)
   const [isVideoOff, setIsVideoOff] = useState(false)
-  const [callStatus, setCallStatus] = useState<'requesting' | 'connected' | 'ended'>('requesting')
-  
+  const [callStatus, setCallStatus] = useState<string>('connecting')
+
   const localVideoRef = useRef<HTMLVideoElement>(null)
   const remoteVideoRef = useRef<HTMLVideoElement>(null)
   const peerConnection = useRef<RTCPeerConnection | null>(null)
 
   useEffect(() => {
-    if (!isDoctor) {
-      // If user is initiating the call, create a call request
-      createCallRequest()
-    } else {
-      // If doctor is joining, start the call
-      startCall()
+    let pc: RTCPeerConnection | null = null
+    let stream: MediaStream | null = null
+
+    const setupCall = async () => {
+      try {
+        // Get local stream
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        })
+        setLocalStream(stream)
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream
+        }
+
+        // Create peer connection
+        pc = new RTCPeerConnection(servers)
+        peerConnection.current = pc
+
+        // Add local stream tracks to peer connection
+        stream.getTracks().forEach(track => {
+          if (pc) pc.addTrack(track, stream!)
+        })
+
+        // Handle incoming tracks
+        pc.ontrack = (event) => {
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = event.streams[0]
+          }
+        }
+
+        // Listen for call status and handle signaling
+        const unsubscribe = onSnapshot(doc(db, 'calls', callId), async (snapshot) => {
+          const data = snapshot.data()
+          if (!data) return
+
+          setCallStatus(data.status)
+
+          try {
+            if (isDoctor && data.status === 'accepted' && !data.offer) {
+              // Doctor creates and sends offer
+              const offer = await pc!.createOffer()
+              await pc!.setLocalDescription(offer)
+              await updateDoc(doc(db, 'calls', callId), {
+                offer: { type: offer.type, sdp: offer.sdp }
+              })
+            }
+
+            if (!isDoctor && data.offer && !pc!.currentRemoteDescription) {
+              // User receives offer and sends answer
+              await pc!.setRemoteDescription(new RTCSessionDescription(data.offer))
+              const answer = await pc!.createAnswer()
+              await pc!.setLocalDescription(answer)
+              await updateDoc(doc(db, 'calls', callId), {
+                answer: { type: answer.type, sdp: answer.sdp }
+              })
+            }
+
+            if (isDoctor && data.answer && !pc!.currentRemoteDescription) {
+              // Doctor receives answer
+              await pc!.setRemoteDescription(new RTCSessionDescription(data.answer))
+            }
+          } catch (error) {
+            console.error('Error during signaling:', error)
+          }
+        })
+
+        return () => {
+          unsubscribe()
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop())
+          }
+          if (pc) {
+            pc.close()
+          }
+        }
+      } catch (error) {
+        console.error('Error setting up call:', error)
+      }
     }
+
+    setupCall()
+
     return () => {
-      cleanup()
-    }
-  }, [])
-
-  const createCallRequest = async () => {
-    try {
-      await setDoc(doc(db, 'calls', callId), {
-        status: 'requesting',
-        createdAt: serverTimestamp(),
-        from: {
-          id: currentUser.uid,
-          name: currentUser.displayName
-        },
-        to: {
-          id: otherUser.id,
-          name: otherUser.name
-        }
-      })
-      
-      // Listen for call status changes
-      const unsubscribe = onSnapshot(doc(db, 'calls', callId), (snapshot) => {
-        const data = snapshot.data()
-        if (data?.status === 'accepted') {
-          setCallStatus('connected')
-          startCall()
-        } else if (data?.status === 'declined' || data?.status === 'ended') {
-          setCallStatus('ended')
-          onEndCall()
-        }
-      })
-      
-      return unsubscribe
-    } catch (error) {
-      console.error('Error creating call request:', error)
-    }
-  }
-
-  const startCall = async () => {
-    try {
-      // Get local stream
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true
-      })
-      setLocalStream(stream)
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop())
       }
-
-      // Create peer connection
-      const pc = new RTCPeerConnection({
-        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-      })
-      peerConnection.current = pc
-
-      // Add local stream to peer connection
-      stream.getTracks().forEach(track => {
-        pc.addTrack(track, stream)
-      })
-
-      // Handle incoming stream
-      pc.ontrack = (event) => {
-        setRemoteStream(event.streams[0])
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0]
-        }
+      if (pc) {
+        pc.close()
       }
-
-      // Handle and send ICE candidates
-      pc.onicecandidate = (event) => {
-        if (event.candidate) {
-          updateDoc(doc(db, 'calls', callId), {
-            candidates: arrayUnion(event.candidate.toJSON())
-          })
-        }
-      }
-
-      // Create and send offer
-      const offer = await pc.createOffer()
-      await pc.setLocalDescription(offer)
-      await setDoc(doc(db, 'calls', callId), {
-        offer: { type: offer.type, sdp: offer.sdp },
-        createdBy: currentUser.uid
-      })
-
-      // Listen for answer and candidates
-      onSnapshot(doc(db, 'calls', callId), async (snapshot) => {
-        const data = snapshot.data()
-        if (!pc.currentRemoteDescription && data?.answer) {
-          await pc.setRemoteDescription(new RTCSessionDescription(data.answer))
-        }
-        if (data?.candidates) {
-          data.candidates.forEach(async (candidate: RTCIceCandidateInit) => {
-            if (!pc.remoteDescription) return
-            await pc.addIceCandidate(new RTCIceCandidate(candidate))
-          })
-        }
-      })
-    } catch (error) {
-      console.error('Error starting call:', error)
     }
-  }
+  }, [callId, isDoctor])
 
   const toggleMute = () => {
     if (localStream) {
@@ -156,18 +149,20 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
     }
   }
 
-  const endCall = async () => {
-    cleanup()
-    await deleteDoc(doc(db, 'calls', callId))
-    onEndCall()
-  }
-
-  const cleanup = () => {
-    if (localStream) {
-      localStream.getTracks().forEach(track => track.stop())
-    }
-    if (peerConnection.current) {
-      peerConnection.current.close()
+  const handleEndCall = async () => {
+    try {
+      await updateDoc(doc(db, 'calls', callId), {
+        status: 'ended'
+      })
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop())
+      }
+      if (peerConnection.current) {
+        peerConnection.current.close()
+      }
+      onEndCall()
+    } catch (error) {
+      console.error('Error ending call:', error)
     }
   }
 
@@ -186,7 +181,7 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
           </div>
         </CardContent>
       )}
-      {callStatus === 'connected' && (
+      {(callStatus === 'connected' || callStatus === 'accepted') && (
         <CardContent className="flex-1 grid grid-cols-2 gap-4 p-4">
           <div className="relative">
             <video
@@ -196,7 +191,7 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
               muted
               className="w-full h-full object-cover rounded-lg"
             />
-            <p className="absolute bottom-2 left-2 text-white text-sm">You</p>
+            <p className="absolute bottom-2 left-2 text-white text-sm bg-black/50 px-2 py-1 rounded">You</p>
           </div>
           <div className="relative">
             <video
@@ -205,7 +200,7 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
               playsInline
               className="w-full h-full object-cover rounded-lg"
             />
-            <p className="absolute bottom-2 left-2 text-white text-sm">
+            <p className="absolute bottom-2 left-2 text-white text-sm bg-black/50 px-2 py-1 rounded">
               {otherUser.name}
             </p>
           </div>
@@ -229,7 +224,7 @@ export default function VideoCall({ callId, currentUser, otherUser, onEndCall, i
         <Button
           variant="destructive"
           size="icon"
-          onClick={endCall}
+          onClick={handleEndCall}
         >
           <PhoneOff />
         </Button>
