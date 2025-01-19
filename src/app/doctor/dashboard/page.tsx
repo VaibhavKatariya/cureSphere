@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, Users, MessageSquare, Video, Settings } from 'lucide-react'
+import { Calendar, Clock, Users, MessageSquare, Settings, LogOut } from 'lucide-react'
 import DoctorAppointments from '@/components/doctor/appointments'
 import DoctorSchedule from '@/components/doctor/schedule'
 // import DoctorPatients from '@/components/doctor/patients'
@@ -48,56 +48,56 @@ export default function DoctorDashboard() {
   }
 
   if (loading) {
-    return <div>Loading...</div>
+    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto p-4">
         {/* Doctor Info Card */}
-        <Card className="mb-6">
+        <Card className="mb-6 bg-white shadow-sm">
           <CardContent className="flex items-center gap-4 p-4">
             <img
               src={doctorData?.avatar || '/placeholder.svg'}
               alt={doctorData?.name}
-              className="w-16 h-16 rounded-full"
+              className="w-16 h-16 rounded-full border-2 border-teal-500"
             />
             <div>
-              <h1 className="text-2xl font-bold">{doctorData?.name}</h1>
-              <p className="text-gray-600">{doctorData?.specialty}</p>
+              <h1 className="text-2xl font-bold text-teal-800">{doctorData?.name}</h1>
+              <p className="text-teal-600">{doctorData?.specialty}</p>
             </div>
-            <div className="ml-auto">
-              <Button
-                variant="outline"
-                onClick={() => auth.signOut()}
-              >
-                Sign Out
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              className="ml-auto text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+              onClick={() => auth.signOut()}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
           </CardContent>
         </Card>
 
         {/* Dashboard Tabs */}
         <Tabs defaultValue="appointments" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="appointments" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
+          <TabsList className="bg-white shadow-sm rounded-lg p-1">
+            <TabsTrigger value="appointments" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
+              <Calendar className="w-4 h-4 mr-2" />
               Appointments
             </TabsTrigger>
-            <TabsTrigger value="schedule" className="flex items-center gap-2">
-              <Clock className="w-4 h-4" />
+            <TabsTrigger value="schedule" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
+              <Clock className="w-4 h-4 mr-2" />
               Schedule
             </TabsTrigger>
-            <TabsTrigger value="patients" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
+            <TabsTrigger value="patients" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
+              <Users className="w-4 h-4 mr-2" />
               Patients
             </TabsTrigger>
-            <TabsTrigger value="chats" className="flex items-center gap-2">
-              <MessageSquare className="w-4 h-4" />
+            <TabsTrigger value="chats" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
+              <MessageSquare className="w-4 h-4 mr-2" />
               Chats
             </TabsTrigger>
-            <TabsTrigger value="settings" className="flex items-center gap-2">
-              <Settings className="w-4 h-4" />
+            <TabsTrigger value="settings" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
+              <Settings className="w-4 h-4 mr-2" />
               Settings
             </TabsTrigger>
           </TabsList>
@@ -125,4 +125,4 @@ export default function DoctorDashboard() {
       </div>
     </div>
   )
-} 
+}
