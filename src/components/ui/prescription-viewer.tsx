@@ -10,6 +10,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion"
+import PremiumPlans from './premium-plans'
 
 interface MedicineInfo {
   name: string

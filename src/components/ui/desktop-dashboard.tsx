@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X } from 'lucide-react'
 import DoctorList from "@/components/ui/doctor-list"
 import PrescriptionViewer from "@/components/ui/prescription-viewer"
+import PremiumPlans from "./premium-plans"
 
 export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, userInfo, handleEdit, handleSave, handleCancel, handleChange }:any) {
   const renderContent = () => {
@@ -161,7 +162,9 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
           </Card>
         )
       case 'prescriptions':
-        return <PrescriptionViewer />
+        return (<PrescriptionViewer />)
+        case 'Premium':
+        return (<PremiumPlans />)
       default:
         return null
     }
@@ -211,9 +214,17 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
             <FileText className="mr-2 h-5 w-5" />
             Prescriptions
           </Button>
+          <Button
+            variant="ghost"
+            className={`w-full justify-start ${activeTab === 'Premium' ? 'bg-teal-100 text-teal-800' : ''}`}
+            onClick={() => setActiveTab('Premium')}
+          >
+            <FileText className="mr-2 h-5 w-5" />
+            Premium
+          </Button>
+          
         </nav>
       </div>
-
       {/* Main Content */}
       <div className="flex-1 p-8">
         <div className="max-w-3xl mx-auto">

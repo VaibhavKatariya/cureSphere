@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X } from 'lucide-react'
 import DoctorList from "@/components/ui/doctor-list"
 import PrescriptionViewer from "@/components/ui/prescription-viewer"
+import PremiumPlans from "./premium-plans"
 
 export default function MobileDashboard({ activeTab, setActiveTab, isEditing, userInfo, handleEdit, handleSave, handleCancel, handleChange }:any) {
   const renderContent = () => {
@@ -165,7 +166,9 @@ export default function MobileDashboard({ activeTab, setActiveTab, isEditing, us
           </Card>
         )
       case 'prescriptions':
-        return <PrescriptionViewer />
+        return (<PrescriptionViewer />)
+        case 'plans':
+        return (<PremiumPlans />)
       default:
         return null
     }
@@ -213,7 +216,15 @@ export default function MobileDashboard({ activeTab, setActiveTab, isEditing, us
             onClick={() => setActiveTab('prescriptions')}
           >
             <FileText className="h-5 w-5" />
-            <span className="text-xs">Rx</span>
+            <span className="text-xs">prescriptions</span>
+          </Button>
+          <Button
+            variant="ghost"
+            className={`flex flex-col items-center gap-1 ${activeTab === 'Premium' ? 'text-teal-500' : ''}`}
+            onClick={() => setActiveTab('Premium')}
+          >
+            <FileText className="h-5 w-5" />
+            <span className="text-xs">Premium</span>
           </Button>
         </div>
       </div>
