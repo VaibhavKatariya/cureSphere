@@ -1,43 +1,53 @@
 'use client'
 
 import { useParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { VideoIcon, MessageSquare, Star, Clock, Globe, DollarSign, GraduationCap } from 'lucide-react'
 
-// This would normally come from an API
-const getDoctorById = (id: string) => {
-  return {
-    id: parseInt(id),
-    name: "Dr. Sarah Smith",
-    specialty: "Orthopedics",
-    experience: "15 years",
-    rating: 4.8,
-    avatar: "/placeholder.svg",
-    availability: "Available",
-    about: "Dr. Sarah Smith is a board-certified orthopedic surgeon specializing in sports medicine and joint replacement. With a passion for helping patients regain mobility and improve their quality of life, Dr. Smith combines her extensive experience with the latest advancements in orthopedic care.",
-    education: [
-      "MBBS - Harvard Medical School",
-      "MS Orthopedics - Johns Hopkins University"
-    ],
-    languages: ["English", "Spanish"],
-    consultationFee: "$100"
-  };
-};
+import { getFirestore, doc } from 'firebase/firestore';
+import { useDocument } from 'react-firebase-hooks/firestore'; // Hook from react-firebase-hooks
+const db = getFirestore(); // Initialize Firestore
 
 export default function DoctorProfile() {
   const params = useParams();
-  const doctor = getDoctorById(params.id as string);
+  const [doctor, setDoctor] = useState(null);
+
+  // Fetching the document using useDocument hook
+  const [value, loading, error] = useDocument(doc(db, 'doctors', params.id));
+
+  useEffect(() => {
+    if (value && value.exists()) {
+      setDoctor(value.data()); // Set the doctor data from Firestore
+    }
+  }, [value]);
 
   const handleChat = () => {
-    window.location.href = `/chat/${doctor.id}`;
+    if (doctor) {
+      window.location.href = `/chat/${doctor.id}`;
+    }
   };
 
   const handleVideoCall = () => {
-    window.location.href = `/video-call/${doctor.id}`;
+    if (doctor) {
+      window.location.href = `/video-call/${doctor.id}`;
+    }
   };
+
+  if (loading) {
+    return <div>Loading...</div>; // You can customize this loading UI
+  }
+
+  if (error) {
+    return <div>Error: {error.message}</div>; // Handle any errors
+  }
+
+  if (!doctor) {
+    return <div>Doctor not found</div>; // Handle case when doctor data isn't available
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -46,7 +56,7 @@ export default function DoctorProfile() {
         <div className="bg-teal-500 text-white p-6">
           <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
             <Avatar className="w-32 h-32 border-4 border-white">
-              <AvatarImage src={doctor.avatar} alt={doctor.name} />
+              <AvatarImage src={doctor.avatar || "/placeholder.svg"} alt={doctor.name} />
               <AvatarFallback>{doctor.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
             <div className="text-center md:text-left">
@@ -80,7 +90,7 @@ export default function DoctorProfile() {
 
               <h2 className="text-2xl font-semibold text-teal-800 mb-4">Education</h2>
               <ul className="list-disc list-inside text-gray-600">
-                {doctor.education.map((edu, index) => (
+                {doctor.education?.map((edu, index) => (
                   <li key={index} className="flex items-start mb-2">
                     <GraduationCap className="w-5 h-5 mr-2 text-teal-600 flex-shrink-0 mt-1" />
                     {edu}
@@ -95,7 +105,7 @@ export default function DoctorProfile() {
                 <div className="space-y-4">
                   <div className="flex items-center">
                     <Globe className="w-5 h-5 text-teal-600 mr-2" />
-                    <span className="text-gray-600">Languages: {doctor.languages.join(', ')}</span>
+                    <span className="text-gray-600">Languages: {doctor.languages?.join(', ')}</span>
                   </div>
                   <div className="flex items-center">
                     <DollarSign className="w-5 h-5 text-teal-600 mr-2" />
@@ -127,4 +137,3 @@ export default function DoctorProfile() {
     </div>
   );
 }
-

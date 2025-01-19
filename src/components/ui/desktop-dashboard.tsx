@@ -78,7 +78,6 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
                           >
                             <option value="male">Male</option>
                             <option value="female">Female</option>
-                            <option value="prefer not to say">Prefer not to say</option>
                           </select>
                         </div>
                         <div>
@@ -163,6 +162,7 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
         )
       case 'prescriptions':
         return (<PrescriptionViewer />)
+      
         case 'Premium':
         return (<PremiumPlans />)
       default:
