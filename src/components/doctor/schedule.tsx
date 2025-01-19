@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { Clock } from 'lucide-react'
 
 interface TimeSlot {
   start: string
@@ -97,20 +98,20 @@ export default function DoctorSchedule({ doctorId }: { doctorId: string }) {
     }))
   }
 
-  if (loading) return <div>Loading schedule...</div>
+  if (loading) return <div className="text-center text-teal-600 py-8">Loading schedule...</div>
 
   return (
     <div className="space-y-6">
       {Object.entries(schedule).map(([day, daySchedule]) => (
-        <Card key={day}>
+        <Card key={day} className="bg-white shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-medium capitalize">{day}</CardTitle>
+            <CardTitle className="text-lg font-medium capitalize text-teal-800">{day}</CardTitle>
             <div className="flex items-center space-x-2">
               <Switch
                 checked={daySchedule.enabled}
                 onCheckedChange={() => toggleDayEnabled(day)}
               />
-              <Label>Available</Label>
+              <Label className="text-teal-600">Available</Label>
             </div>
           </CardHeader>
           <CardContent>
@@ -120,9 +121,10 @@ export default function DoctorSchedule({ doctorId }: { doctorId: string }) {
                   <Button
                     key={index}
                     variant={slot.available ? "default" : "outline"}
-                    className={slot.available ? "bg-green-500 hover:bg-green-600" : ""}
+                    className={`${slot.available ? "bg-teal-500 hover:bg-teal-600" : "text-teal-600 hover:bg-teal-50"} flex items-center justify-center`}
                     onClick={() => toggleTimeSlot(day, index)}
                   >
+                    <Clock className="w-4 h-4 mr-2" />
                     {slot.start} - {slot.end}
                   </Button>
                 ))}
@@ -132,11 +134,12 @@ export default function DoctorSchedule({ doctorId }: { doctorId: string }) {
         </Card>
       ))}
       <Button 
-        className="w-full"
+        className="w-full bg-teal-500 hover:bg-teal-600 text-white"
         onClick={saveSchedule}
       >
         Save Schedule
       </Button>
     </div>
   )
-} 
+}
+

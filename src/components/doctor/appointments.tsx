@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Badge } from "@/components/ui/badge"
-import { Check, X } from 'lucide-react'
+import { Check, X, Video, MessageSquare } from 'lucide-react'
 
 interface Appointment {
   id: string
@@ -60,31 +60,31 @@ export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
 
   return (
     <div className="grid md:grid-cols-[300px,1fr] gap-6">
-      <Card>
+      <Card className="bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg font-medium">Select Date</CardTitle>
+          <CardTitle className="text-lg font-medium text-teal-800">Select Date</CardTitle>
         </CardHeader>
         <CardContent>
           <Calendar
             mode="single"
             selected={selectedDate}
             onSelect={(date) => date && setSelectedDate(date)}
-            className="rounded-md border"
+            className="rounded-md border border-teal-200"
           />
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-white shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg font-medium">
+          <CardTitle className="text-lg font-medium text-teal-800">
             Appointments for {selectedDate.toLocaleDateString()}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div>Loading appointments...</div>
+            <div className="text-center text-teal-600 py-8">Loading appointments...</div>
           ) : appointments.length === 0 ? (
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-teal-600 py-8">
               No appointments scheduled for this date
             </div>
           ) : (
@@ -92,14 +92,14 @@ export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
               {appointments.map((appointment) => (
                 <div
                   key={appointment.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-center justify-between p-4 border border-teal-100 rounded-lg hover:bg-teal-50 transition-colors"
                 >
                   <div>
-                    <h3 className="font-medium">{appointment.patientName}</h3>
-                    <p className="text-sm text-gray-500">
-                      {appointment.time} - {appointment.type} consultation
+                    <h3 className="font-medium text-teal-800">{appointment.patientName}</h3>
+                    <p className="text-sm text-teal-600">
+                      {appointment.time} - {appointment.type === 'video' ? <Video className="inline w-4 h-4" /> : <MessageSquare className="inline w-4 h-4" />} consultation
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-sm text-teal-700 mt-1">
                       Symptoms: {appointment.symptoms}
                     </p>
                   </div>
@@ -112,6 +112,7 @@ export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
                           ? 'destructive'
                           : 'secondary'
                       }
+                      className="capitalize"
                     >
                       {appointment.status}
                     </Badge>
@@ -120,7 +121,7 @@ export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-green-600"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50"
                           onClick={() => updateAppointmentStatus(appointment.id, 'confirmed')}
                         >
                           <Check className="h-4 w-4" />
@@ -128,7 +129,7 @@ export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
                         <Button
                           size="sm"
                           variant="outline"
-                          className="text-red-600"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           onClick={() => updateAppointmentStatus(appointment.id, 'cancelled')}
                         >
                           <X className="h-4 w-4" />
@@ -144,4 +145,4 @@ export default function DoctorAppointments({ doctorId }: { doctorId: string }) {
       </Card>
     </div>
   )
-} 
+}
