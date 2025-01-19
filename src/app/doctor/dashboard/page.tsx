@@ -8,13 +8,15 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, Users, MessageSquare, Settings, LogOut, FileText } from 'lucide-react'
+import { Calendar, Clock, Users, MessageSquare, Settings, LogOut, FileText, Bell } from 'lucide-react'
 import DoctorAppointments from '@/components/doctor/appointments'
 import DoctorSchedule from '@/components/doctor/schedule'
 import Prescription from '@/components/doctor/prescription'
-// import DoctorPatients from '@/components/doctor/patients'
-// import DoctorChats from '@/components/doctor/chats'
-// import DoctorSettings from '@/components/doctor/settings'
+import DoctorNotifications from '@/components/doctor/notifications'
+import NotificationsList from  "@/components/doctor/notifications-list"
+import DoctorPatients from '@/components/doctor/patients'
+import DoctorChats from '@/components/doctor/chats'
+import DoctorSettings from '@/components/doctor/settings'
 
 export default function DoctorDashboard() {
   const [user] = useAuthState(auth)
@@ -54,6 +56,7 @@ export default function DoctorDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <DoctorNotifications />
       <div className="container mx-auto p-4">
         {/* Doctor Info Card */}
         <Card className="mb-6 bg-white shadow-sm">
@@ -85,6 +88,10 @@ export default function DoctorDashboard() {
               <Calendar className="w-4 h-4 mr-2" />
               Appointments
             </TabsTrigger>
+            <TabsTrigger value="notifications" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
+              <Bell className="w-4 h-4 mr-2" />
+              Notifications
+            </TabsTrigger>
             <TabsTrigger value="schedule" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
               <Clock className="w-4 h-4 mr-2" />
               Schedule
@@ -109,6 +116,19 @@ export default function DoctorDashboard() {
 
           <TabsContent value="appointments">
             <DoctorAppointments doctorId={user.uid} />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold text-teal-800">
+                  Recent Notifications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <NotificationsList doctorId={user.uid} />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="schedule">
