@@ -116,6 +116,12 @@ export default function Login() {
               Sign up
             </Link>
           </div>
+          <div className="text-sm text-gray-600">
+            login in as a doctor?{' '}
+            <Link href="/doctor/signin" className="text-teal-600 hover:underline">
+              sign in here
+            </Link>
+          </div>
         </CardFooter>
       </Card>
     </div>

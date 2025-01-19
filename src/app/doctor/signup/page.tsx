@@ -207,6 +207,12 @@ export default function DoctorSignup() {
               Sign in
             </Link>
           </div>
+          <div className="text-sm text-gray-600 text-center w-full">
+            Not a doctor?{' '}
+            <Link href="/doctor/signin" className="text-blue-600 hover:underline">
+              Sign in
+            </Link>
+          </div>
         </CardFooter>
       </Card>
     </div>

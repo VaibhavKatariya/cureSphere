@@ -15,7 +15,7 @@ export default function Home() {
           <nav className="hidden md:flex space-x-4">
             <a href="#features" className="hover:text-teal-200 transition-colors">Features</a>
             <a href="#about" className="hover:text-teal-200 transition-colors">About</a>
-            <a href="/signup" className="hover:text-teal-200 transition-colors">Signup/Signin</a>
+            <a href="/signup" className="hover:text-teal-200 transition-colors">Sign in</a>
           </nav>
         </div>
       </header>
