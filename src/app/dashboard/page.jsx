@@ -6,8 +6,8 @@ import MobileDashboard from "@/components/ui/mobile-dashboard"
 import DesktopDashboard from '@/components/ui/desktop-dashboard'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth, db } from '@/app/Firebase/config'
-import { doc, getDoc } from 'firebase/firestore'
-import { updateDoc } from 'firebase/firestore'
+import { doc, getDoc, updateDoc } from 'firebase/firestore'
+import { useRouter } from 'next/navigation'
 
 export default function Dashboard() {
   const [user] = useAuthState(auth)
@@ -17,6 +17,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
 
   const isDesktop = useMediaQuery('(min-width: 768px)')
+  const router = useRouter()
 
   // Fetch user information on user state change
   useEffect(() => {
@@ -32,11 +33,14 @@ export default function Dashboard() {
         } finally {
           setLoading(false)
         }
+      } else {
+        // Redirect to the sign-in page if the user is not logged in
+        router.push('/signin')
       }
     }
 
     fetchUserData()
-  }, [user])
+  }, [user, router])
 
   const handleEdit = () => setIsEditing(true)
   const handleSave = async () => {
@@ -64,14 +68,6 @@ export default function Dashboard() {
     handleSave,
     handleCancel,
     handleChange,
-  }
-
-  if (!user) {
-    return (
-      <div>
-        <p>You are not signed in. Please log in to access the dashboard.</p>
-      </div>
-    )
   }
 
   if (loading || !userInfo) {
