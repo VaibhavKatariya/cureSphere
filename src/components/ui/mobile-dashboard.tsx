@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X } from 'lucide-react'
+import DoctorList from "@/components/ui/doctor-list"
 
 export default function MobileDashboard({ activeTab, setActiveTab, isEditing, userInfo, handleEdit, handleSave, handleCancel, handleChange }:any) {
   const renderContent = () => {
@@ -155,13 +156,10 @@ export default function MobileDashboard({ activeTab, setActiveTab, isEditing, us
         return (
           <Card className="border-0 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base font-medium">Chat with Doctor</CardTitle>
+              <CardTitle className="text-base font-medium">Find a Doctor</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="bg-teal-50 rounded-lg p-4 text-center">
-                <p className="text-gray-600">Start a new conversation with your doctor</p>
-                <Button className="mt-4 bg-teal-500 hover:bg-teal-600">New Chat</Button>
-              </div>
+              <DoctorList />
             </CardContent>
           </Card>
         )

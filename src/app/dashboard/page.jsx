@@ -49,7 +49,7 @@ export default function Dashboard() {
     handleSave,
     handleCancel,
     handleChange,
-  }
+  } 
 
   if (!user) {
     return (

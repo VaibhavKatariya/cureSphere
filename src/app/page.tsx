@@ -132,7 +132,7 @@ export default function Home() {
   )
 }
 
-function FeatureCard({ icon, title, description }) {
+function FeatureCard({ icon, title, description }:any) {
   return (
     <div className="bg-white p-6 rounded-lg shadow-lg transition-transform hover:scale-105">
       <div className="mb-4">{icon}</div>
