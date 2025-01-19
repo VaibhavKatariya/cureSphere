@@ -5,39 +5,54 @@ import { useMediaQuery } from '@/hooks/use-media-query'
 import MobileDashboard from "@/components/ui/mobile-dashboard"
 import DesktopDashboard from '@/components/ui/desktop-dashboard'
 import { useAuthState } from 'react-firebase-hooks/auth'
-import { auth } from '@/app/Firebase/config'
+import { auth, db } from '@/app/Firebase/config'
+import { doc, getDoc } from 'firebase/firestore'
+import { updateDoc } from 'firebase/firestore'
 
 export default function Dashboard() {
   const [user] = useAuthState(auth)
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isEditing, setIsEditing] = useState(false)
-  const [userInfo, setUserInfo] = useState({
-    name: 'Default User', // Default name before we check for Firebase user name
-    age: '28',
-    sex: 'Female',
-    height: '165',
-    weight: '62',
-    avatar: '/placeholder.svg',
-  })
+  const [userInfo, setUserInfo] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   const isDesktop = useMediaQuery('(min-width: 768px)')
 
   // Fetch user information on user state change
   useEffect(() => {
-    if (user) {
-      // If the Firebase user has a displayName, use it; otherwise, use the default
-      setUserInfo(prev => ({
-        ...prev,
-        name: user.displayName || 'Default User',
-      }))
+    const fetchUserData = async () => {
+      if (user) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid))
+          if (userDoc.exists()) {
+            setUserInfo(userDoc.data())
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error)
+        } finally {
+          setLoading(false)
+        }
+      }
     }
-  }, [user]) // Dependency on user, to update userInfo whenever user changes
+
+    fetchUserData()
+  }, [user])
 
   const handleEdit = () => setIsEditing(true)
-  const handleSave = () => setIsEditing(false)
+  const handleSave = async () => {
+    try {
+      await updateDoc(doc(db, 'users', user.uid), userInfo)
+      setIsEditing(false)
+    } catch (error) {
+      console.error('Error updating user data:', error)
+    }
+  }
   const handleCancel = () => setIsEditing(false)
   const handleChange = (e) => {
-    setUserInfo(prev => ({ ...prev, [e.target.name]: e.target.value }))
+    setUserInfo(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }))
   }
 
   const dashboardProps = {
@@ -49,7 +64,7 @@ export default function Dashboard() {
     handleSave,
     handleCancel,
     handleChange,
-  } 
+  }
 
   if (!user) {
     return (
@@ -57,6 +72,10 @@ export default function Dashboard() {
         <p>You are not signed in. Please log in to access the dashboard.</p>
       </div>
     )
+  }
+
+  if (loading || !userInfo) {
+    return <div>Loading...</div>
   }
 
   return isDesktop ? (

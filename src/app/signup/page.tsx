@@ -1,15 +1,75 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useCreateUserWithEmailAndPassword, useAuthState } from 'react-firebase-hooks/auth'
+import { auth, db } from '@/app/Firebase/config'
+import { doc, setDoc } from 'firebase/firestore'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Lock, Phone, Stethoscope, BookOpen } from 'lucide-react'
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
 
 export default function SignUp() {
   const [userType, setUserType] = useState('user')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
+  const [age, setAge] = useState('')
+  const [sex, setSex] = useState('male')
+  const [error, setError] = useState('')
+  
+  const [createUserWithEmailAndPassword, user, loading, firebaseError] = 
+    useCreateUserWithEmailAndPassword(auth)
+  const [authUser, authLoading] = useAuthState(auth)
+  const router = useRouter()
+
+  useEffect(() => {
+    if (authUser) {
+      router.push('/dashboard')
+    }
+  }, [authUser, router])
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (!email || !password || !name || !age || !sex) {
+      setError('Please fill in all fields.')
+      return
+    }
+
+    try {
+      const result = await createUserWithEmailAndPassword(email, password)
+      if (result?.user) {
+        // Create user profile in Firestore
+        await setDoc(doc(db, 'users', result.user.uid), {
+          uid: result.user.uid,
+          name,
+          email,
+          age,
+          sex,
+          avatar: '/placeholder.svg',
+          createdAt: new Date().toISOString(),
+          role: 'user',
+          isPremium: false,
+          premiumType: null,
+          videoCallsRemaining: 0,
+          prescriptionsRemaining: 0
+        })
+        // Update the user's display name in Firebase Auth
+        await result.user.updateProfile({
+          displayName: name
+        })
+      }
+    } catch (err) {
+      setError('Failed to create account. Please try again.')
+      console.error('Signup error:', err)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-teal-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -27,27 +87,53 @@ export default function SignUp() {
               <TabsTrigger value="doctor">Doctor</TabsTrigger>
             </TabsList>
             <TabsContent value="user">
-              <form className="space-y-6" action="#" method="POST">
+              <form onSubmit={handleSignup} className="space-y-6">
+                {error && (
+                  <div className="p-3 rounded-md bg-red-50 text-red-500 text-sm">
+                    {error}
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="name" className="flex items-center">
                     <User className="w-5 h-5 mr-2" />
                     Name
                   </Label>
-                  <Input id="name" name="name" type="text" required className="mt-1" />
+                  <Input id="name" name="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="age" className="flex items-center">
+                    Age
+                  </Label>
+                  <Input id="age" name="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} required className="mt-1" />
+                </div>
+                <div>
+                  <Label htmlFor="sex" className="flex items-center">
+                    Sex
+                  </Label>
+                  <select
+                    id="sex"
+                    name="sex"
+                    value={sex}
+                    onChange={(e) => setSex(e.target.value)}
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+                  >
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="email" className="flex items-center">
                     <Mail className="w-5 h-5 mr-2" />
                     Email address
                   </Label>
-                  <Input id="email" name="email" type="email" autoComplete="email" required className="mt-1" />
+                  <Input id="email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required className="mt-1" />
                 </div>
                 <div>
                   <Label htmlFor="password" className="flex items-center">
                     <Lock className="w-5 h-5 mr-2" />
                     Password
                   </Label>
-                  <Input id="password" name="password" type="password" required className="mt-1" />
+                  <Input id="password" name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1" />
                 </div>
                 <div>
                   <Label htmlFor="phone" className="flex items-center">

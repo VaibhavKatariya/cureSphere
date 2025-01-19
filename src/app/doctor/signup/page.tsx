@@ -46,6 +46,7 @@ export default function DoctorSignup() {
       if (result?.user) {
         // Create doctor profile in Firestore
         await setDoc(doc(db, 'doctors', result.user.uid), {
+          uid: result.user.uid,
           name,
           email,
           specialty,
@@ -57,6 +58,10 @@ export default function DoctorSignup() {
           avatar: '/placeholder.svg',
           createdAt: new Date().toISOString(),
           role: 'doctor',
+          about: '',
+          education: [],
+          languages: [],
+          consultationFee: '',
           acceptingNewPatients: true,
           searchKeywords: [
             name.toLowerCase(),

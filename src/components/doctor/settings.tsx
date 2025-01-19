@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
+import { Plus, X } from 'lucide-react'
 // import { toast } from "@/components/ui/toast"
 
 interface DoctorData {
@@ -22,6 +23,9 @@ interface DoctorData {
   avatar: string
   availability: string
   acceptingNewPatients?: boolean
+  about?: string
+  education?: string[]
+  languages?: string[]
 }
 
 export default function DoctorSettings({ 
@@ -33,6 +37,8 @@ export default function DoctorSettings({
 }) {
   const [formData, setFormData] = useState(doctorData)
   const [loading, setLoading] = useState(false)
+  const [newEducation, setNewEducation] = useState('')
+  const [newLanguage, setNewLanguage] = useState('')
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -68,107 +74,150 @@ export default function DoctorSettings({
   // // }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    // e.preventDefault()
-    // setLoading(true)
+    e.preventDefault()
+    setLoading(true)
 
-    // try {
-    //   await updateDoc(doc(db, 'doctors', doctorId), formData)
-    //   toast({
-    //     title: "Success",
-    //     description: "Profile updated successfully",
-    //   })
-    // } catch (error) {
-    //   console.error('Error updating profile:', error)
-    //   toast({
-    //     title: "Error",
-    //     description: "Failed to update profile",
-    //     variant: "destructive",
-    //   })
-    // } finally {
-    //   setLoading(false)
-    // }
+    try {
+      await updateDoc(doc(db, 'doctors', doctorId), formData)
+      console.log('Profile updated successfully')
+    } catch (error) {
+      console.error('Error updating profile:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const addEducation = () => {
+    if (newEducation.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        education: [...(prev.education || []), newEducation.trim()]
+      }))
+      setNewEducation('')
+    }
+  }
+
+  const removeEducation = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      education: prev.education?.filter((_, i) => i !== index)
+    }))
+  }
+
+  const addLanguage = () => {
+    if (newLanguage.trim()) {
+      setFormData(prev => ({
+        ...prev,
+        languages: [...(prev.languages || []), newLanguage.trim()]
+      }))
+      setNewLanguage('')
+    }
+  }
+
+  const removeLanguage = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      languages: prev.languages?.filter((_, i) => i !== index)
+    }))
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg font-medium">Profile Settings</CardTitle>
+          <CardTitle>Professional Information</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <img
-              src={formData.avatar || '/placeholder.svg'}
-              alt={formData.name}
-              className="w-24 h-24 rounded-full object-cover"
-            />
-            {/* <Input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="max-w-[200px]"
-            /> */}
-          </div>
-
-          <div className="grid gap-4">
+        <CardContent>
+          <div className="space-y-6">
             <div>
-              <Label htmlFor="name">Full Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
+              <Label htmlFor="about">About Me</Label>
+              <Textarea
+                id="about"
+                name="about"
+                value={formData.about || ''}
                 onChange={handleChange}
+                rows={6}
+                placeholder="Write a brief description about your medical practice, experience, and approach..."
+                className="mt-1"
               />
             </div>
 
             <div>
-              <Label htmlFor="specialty">Specialty</Label>
-              <Input
-                id="specialty"
-                name="specialty"
-                value={formData.specialty}
-                onChange={handleChange}
-              />
+              <Label>Education & Qualifications</Label>
+              <div className="space-y-2">
+                {formData.education?.map((edu, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="flex-1 p-2 bg-gray-50 rounded">{edu}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeEducation(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Input
+                    value={newEducation}
+                    onChange={(e) => setNewEducation(e.target.value)}
+                    placeholder="Add education (e.g., MBBS - University Name)"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addEducation}
+                    variant="outline"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <div>
-              <Label htmlFor="hospital">Hospital/Clinic</Label>
-              <Input
-                id="hospital"
-                name="hospital"
-                value={formData.hospital}
-                onChange={handleChange}
-              />
+              <Label>Languages Spoken</Label>
+              <div className="space-y-2">
+                {formData.languages?.map((lang, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <span className="flex-1 p-2 bg-gray-50 rounded">{lang}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeLanguage(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <div className="flex gap-2">
+                  <Input
+                    value={newLanguage}
+                    onChange={(e) => setNewLanguage(e.target.value)}
+                    placeholder="Add language"
+                  />
+                  <Button
+                    type="button"
+                    onClick={addLanguage}
+                    variant="outline"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
 
             <div>
-              <Label htmlFor="experience">Years of Experience</Label>
-              <Input
-                id="experience"
-                name="experience"
-                value={formData.experience}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="consultationFee">Consultation Fee</Label>
+              <Label htmlFor="consultationFee">Consultation Fee (₹)</Label>
               <Input
                 id="consultationFee"
                 name="consultationFee"
-                value={formData.consultationFee}
+                type="number"
+                value={formData.consultationFee || ''}
                 onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="bio">Professional Bio</Label>
-              <Textarea
-                id="bio"
-                name="bio"
-                value={formData.bio}
-                onChange={handleChange}
-                rows={4}
+                placeholder="Enter your consultation fee"
+                className="mt-1"
               />
             </div>
 
@@ -187,7 +236,7 @@ export default function DoctorSettings({
 
       <Button 
         type="submit" 
-        className="w-full"
+        className="w-full bg-teal-600 hover:bg-teal-700"
         disabled={loading}
       >
         {loading ? 'Saving...' : 'Save Changes'}
