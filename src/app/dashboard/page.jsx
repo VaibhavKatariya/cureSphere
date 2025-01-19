@@ -4,8 +4,11 @@ import { useState } from 'react'
 import { useMediaQuery } from '@/hooks/use-media-query'
 import MobileDashboard from "@/components/ui/mobile-dashboard"
 import DesktopDashboard from '@/components/ui/desktop-dashboard'
+import { useAuthState } from 'react-firebase-hooks/auth'
+import { auth } from '@/app/Firebase/config'
 
 export default function Dashboard() {
+  const [user] = useAuthState(auth) 
   const [activeTab, setActiveTab] = useState('dashboard')
   const [isEditing, setIsEditing] = useState(false)
   const [userInfo, setUserInfo] = useState({
@@ -35,6 +38,14 @@ export default function Dashboard() {
     handleSave,
     handleCancel,
     handleChange,
+  }
+
+  if (!user) {
+    return (
+      <div>
+        <p>You are not signed in. Please log in to access the dashboard.</p>
+      </div>
+    )
   }
 
   return isDesktop ? (
