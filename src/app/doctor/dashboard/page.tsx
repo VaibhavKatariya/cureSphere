@@ -8,9 +8,10 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, Users, MessageSquare, Settings, LogOut } from 'lucide-react'
+import { Calendar, Clock, Users, MessageSquare, Settings, LogOut, FileText } from 'lucide-react'
 import DoctorAppointments from '@/components/doctor/appointments'
 import DoctorSchedule from '@/components/doctor/schedule'
+import Prescription from '@/components/doctor/prescription'
 // import DoctorPatients from '@/components/doctor/patients'
 // import DoctorChats from '@/components/doctor/chats'
 // import DoctorSettings from '@/components/doctor/settings'
@@ -100,6 +101,10 @@ export default function DoctorDashboard() {
               <Settings className="w-4 h-4 mr-2" />
               Settings
             </TabsTrigger>
+            <TabsTrigger value="prescription" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
+              <FileText className="w-4 h-4 mr-2" />
+              Prescription
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="appointments">
@@ -108,6 +113,10 @@ export default function DoctorDashboard() {
 
           <TabsContent value="schedule">
             <DoctorSchedule doctorId={user.uid} />
+          </TabsContent>
+
+          <TabsContent value="prescription">
+            <Prescription />
           </TabsContent>
 
           {/* <TabsContent value="patients">

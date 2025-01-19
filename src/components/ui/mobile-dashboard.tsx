@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X } from 'lucide-react'
 import DoctorList from "@/components/ui/doctor-list"
+import PrescriptionViewer from "@/components/ui/prescription-viewer"
 
 export default function MobileDashboard({ activeTab, setActiveTab, isEditing, userInfo, handleEdit, handleSave, handleCancel, handleChange }:any) {
   const renderContent = () => {
@@ -163,17 +164,10 @@ export default function MobileDashboard({ activeTab, setActiveTab, isEditing, us
             </CardContent>
           </Card>
         )
-      case 'prescription':
-        return (
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base font-medium">Current Prescriptions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">No active prescriptions.</p>
-            </CardContent>
-          </Card>
-        )
+      case 'prescriptions':
+        return <PrescriptionViewer />
+      default:
+        return null
     }
   }
 
@@ -215,8 +209,8 @@ export default function MobileDashboard({ activeTab, setActiveTab, isEditing, us
           </Button>
           <Button
             variant="ghost"
-            className={`flex flex-col items-center gap-1 ${activeTab === 'prescription' ? 'text-teal-500' : ''}`}
-            onClick={() => setActiveTab('prescription')}
+            className={`flex flex-col items-center gap-1 ${activeTab === 'prescriptions' ? 'text-teal-500' : ''}`}
+            onClick={() => setActiveTab('prescriptions')}
           >
             <FileText className="h-5 w-5" />
             <span className="text-xs">Rx</span>

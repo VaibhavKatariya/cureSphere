@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Home, Stethoscope, MessageSquare, FileText, Upload, Download, Edit2, Check, X } from 'lucide-react'
 import DoctorList from "@/components/ui/doctor-list"
+import PrescriptionViewer from "@/components/ui/prescription-viewer"
 
 export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, userInfo, handleEdit, handleSave, handleCancel, handleChange }:any) {
   const renderContent = () => {
@@ -159,17 +160,10 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
             </CardContent>
           </Card>
         )
-      case 'prescription':
-        return (
-          <Card className="border-0 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-base font-medium">Current Prescriptions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">No active prescriptions.</p>
-            </CardContent>
-          </Card>
-        )
+      case 'prescriptions':
+        return <PrescriptionViewer />
+      default:
+        return null
     }
   }
 
@@ -211,8 +205,8 @@ export default function DesktopDashboard({ activeTab, setActiveTab, isEditing, u
           </Button>
           <Button
             variant="ghost"
-            className={`w-full justify-start ${activeTab === 'prescription' ? 'bg-teal-100 text-teal-800' : ''}`}
-            onClick={() => setActiveTab('prescription')}
+            className={`w-full justify-start ${activeTab === 'prescriptions' ? 'bg-teal-100 text-teal-800' : ''}`}
+            onClick={() => setActiveTab('prescriptions')}
           >
             <FileText className="mr-2 h-5 w-5" />
             Prescriptions
