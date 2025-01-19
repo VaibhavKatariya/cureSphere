@@ -1,47 +1,48 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useCreateUserWithEmailAndPassword, useAuthState } from 'react-firebase-hooks/auth'
-import { auth, db } from '@/app/Firebase/config'
-import { doc, setDoc } from 'firebase/firestore'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent } from "@/components/ui/tabs"
-import { User, Mail, Lock, Phone } from 'lucide-react'
+import { useState, useEffect } from 'react';
+import { useCreateUserWithEmailAndPassword, useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from '@/app/Firebase/config';
+import { doc, setDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { User, Mail, Lock, Phone } from 'lucide-react';
 
 export default function SignUp() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [age, setAge] = useState('')
-  const [sex, setSex] = useState('male')
-  const [error, setError] = useState('')
-  
-  const [createUserWithEmailAndPassword, user, loading, firebaseError] = 
-    useCreateUserWithEmailAndPassword(auth)
-  const [authUser, authLoading] = useAuthState(auth)
-  const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [sex, setSex] = useState('male');
+  const [error, setError] = useState('');
+
+  const [createUserWithEmailAndPassword, user, loading, firebaseError] =
+    useCreateUserWithEmailAndPassword(auth);
+  const [authUser, authLoading] = useAuthState(auth);
+  const router = useRouter();
 
   useEffect(() => {
     if (authUser) {
-      router.push('/dashboard')
+      router.push('/dashboard');
     }
-  }, [authUser, router])
+  }, [authUser, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError('');
 
     if (!email || !password || !name || !age || !sex) {
-      setError('Please fill in all fields.')
-      return
+      setError('Please fill in all fields.');
+      return;
     }
 
     try {
-      const result = await createUserWithEmailAndPassword(email, password)
+      const result = await createUserWithEmailAndPassword(email, password);
       if (result?.user) {
         // Create user profile in Firestore
         await setDoc(doc(db, 'users', result.user.uid), {
@@ -56,18 +57,18 @@ export default function SignUp() {
           isPremium: false,
           premiumType: null,
           videoCallsRemaining: 0,
-          prescriptionsRemaining: 0
-        })
+          prescriptionsRemaining: 0,
+        });
         // Update the user's display name in Firebase Auth
-        await result.user.updateProfile({
-          displayName: name
-        })
+        await updateProfile(result.user, {
+          displayName: name,
+        });
       }
     } catch (err) {
-      setError('Failed to create account. Please try again.')
-      console.error('Signup error:', err)
+      setError('Failed to create account. Please try again.');
+      console.error('Signup error:', err);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-teal-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -92,13 +93,29 @@ export default function SignUp() {
                     <User className="w-5 h-5 mr-2" />
                     Name
                   </Label>
-                  <Input id="name" name="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1" />
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="age" className="flex items-center">
                     Age
                   </Label>
-                  <Input id="age" name="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} required className="mt-1" />
+                  <Input
+                    id="age"
+                    name="age"
+                    type="number"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="sex" className="flex items-center">
@@ -120,14 +137,31 @@ export default function SignUp() {
                     <Mail className="w-5 h-5 mr-2" />
                     Email address
                   </Label>
-                  <Input id="email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required className="mt-1" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="password" className="flex items-center">
                     <Lock className="w-5 h-5 mr-2" />
                     Password
                   </Label>
-                  <Input id="password" name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="phone" className="flex items-center">
@@ -137,7 +171,10 @@ export default function SignUp() {
                   <Input id="phone" name="phone" type="tel" className="mt-1" />
                 </div>
                 <div>
-                  <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white">
+                  <Button
+                    type="submit"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                  >
                     Sign Up
                   </Button>
                 </div>
@@ -156,7 +193,10 @@ export default function SignUp() {
               </div>
             </div>
             <div className="mt-6">
-              <Link href="/signin" className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-teal-600 hover:bg-gray-50">
+              <Link
+                href="/signin"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-teal-600 hover:bg-gray-50"
+              >
                 Sign In
               </Link>
             </div>
@@ -173,7 +213,10 @@ export default function SignUp() {
               </div>
             </div>
             <div className="mt-6">
-              <Link href="/doctor/signin" className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-teal-600 hover:bg-gray-50">
+              <Link
+                href="/doctor/signin"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-teal-600 hover:bg-gray-50"
+              >
                 Sign In as Doctor
               </Link>
             </div>
@@ -181,5 +224,5 @@ export default function SignUp() {
         </div>
       </div>
     </div>
-  )
+  );
 }
