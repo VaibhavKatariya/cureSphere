@@ -16,7 +16,11 @@ CureSphere is an AI-powered healthcare platform designed to revolutionize diseas
   Receive actionable tips to improve health and reduce potential risks.  
 
 - **Telemedicine Integration**  
-  Connect with healthcare professionals for consultations (planned future enhancement).  
+  Connect with healthcare professionals for consultations (planned future enhancement). 
+
+- **Prescription Document Analysis**  
+  Take a photo of your Doctor's medical prescription and it will automatically detect only the medicines' name. 
+    > **API for OCR (Optical Character Recognition)**: We have developed an API that uses OCR technology to extract text from medical prescriptions. You can find the API repo [here](https://github.com/lakshaygupta2005/OCR-regex).
 
 ## 🛠️ **Tech Stack**  
 
