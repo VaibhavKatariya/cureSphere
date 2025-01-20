@@ -2,21 +2,28 @@
 
 import { useState, useEffect } from 'react'
 import { db } from '@/app/Firebase/config'
-import { collection, query, where, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore'
-import { Card, CardContent } from "@/components/ui/card"
+import { collection, query, where, orderBy, onSnapshot, Timestamp } from 'firebase/firestore'
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { formatDistanceToNow } from 'date-fns'
 import ChatWindow from '@/components/chat/chat-window'
+import { formatDistanceToNow } from 'date-fns'
 
 interface Chat {
   id: string
-  userId: string
-  userName: string
-  userAvatar: string
-  lastMessage: string
-  lastMessageTime: Date
-  unreadCount: number
+  participants: string[]
+  participantDetails: {
+    [key: string]: {
+      name: string
+      avatar: string
+      role: string
+    }
+  }
+  lastMessage?: string
+  updatedAt?: Timestamp
+  createdAt?: Timestamp
+  [key: string]: any
 }
 
 export default function DoctorChats({ doctorId }: { doctorId: string }) {
@@ -26,104 +33,124 @@ export default function DoctorChats({ doctorId }: { doctorId: string }) {
 
   useEffect(() => {
     if (!doctorId) return
-
-    const activeChatsQuery = query(
+    
+    console.log('Setting up chat listener for doctor:', doctorId)
+    
+    const q = query(
       collection(db, 'chats'),
-      where('participants', 'array-contains', doctorId),
-      orderBy('createdAt', 'desc')
+      where('participants', 'array-contains', doctorId)
     )
 
-    // Subscribe to active chats
-    const chatsUnsubscribe = onSnapshot(activeChatsQuery, async (snapshot) => {
-      try {
-        console.log('Got chat snapshot:', snapshot.docs.length, 'chats')
-        const chatData: Chat[] = []
-
-        for (const docSnapshot of snapshot.docs) {
-          const data = docSnapshot.data()
-          console.log('Processing chat:', docSnapshot.id, data)
-          
-          const otherUserId = data.participants?.find((id: string) => id !== doctorId)
-          if (!otherUserId) continue
-
-          try {
-            const userDocRef = doc(db, 'users', otherUserId)
-            const userDocSnap = await getDoc(userDocRef)
-            const userData = userDocSnap.data()
-            console.log('Got user data:', otherUserId, userData)
-
-            if (userData) {
-              chatData.push({
-                id: docSnapshot.id,
-                userId: otherUserId,
-                userName: userData.displayName || userData.name || 'User',
-                userAvatar: userData.photoURL || userData.avatar || '/placeholder.svg',
-                lastMessage: data.lastMessage || 'New conversation',
-                lastMessageTime: data.createdAt?.toDate() || new Date(),
-                unreadCount: data[`${doctorId}UnreadCount`] || 0
-              })
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        console.log('Chat snapshot received:', snapshot.docs.length, 'chats')
+        
+        const chatList = snapshot.docs
+          .map(doc => {
+            const data = doc.data()
+            return {
+              id: doc.id,
+              ...data,
+              lastMessageTime: data.updatedAt?.toDate() || data.createdAt?.toDate()
             }
-          } catch (error) {
-            console.error('Error fetching user data for:', otherUserId, error)
-          }
-        }
+          })
+          .sort((a, b) => {
+            const timeA = a.updatedAt?.toMillis() || a.createdAt?.toMillis() || 0
+            const timeB = b.updatedAt?.toMillis() || b.createdAt?.toMillis() || 0
+            return timeB - timeA
+          }) as Chat[]
 
-        setChats(chatData)
+        console.log('Processed chats:', chatList)
+        setChats(chatList)
         setLoading(false)
-      } catch (error) {
-        console.error('Error processing chat data:', error)
+      },
+      (error) => {
+        console.error('Error in chat subscription:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load chats",
+          variant: "destructive"
+        })
         setLoading(false)
       }
-    })
+    )
 
     return () => {
-      chatsUnsubscribe()
+      console.log('Cleaning up chat subscription')
+      unsubscribe()
     }
   }, [doctorId])
+
+  const getOtherParticipant = (chat: Chat) => {
+    const otherParticipantId = chat.participants.find(p => p !== doctorId)
+    return otherParticipantId ? chat.participantDetails[otherParticipantId] : null
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[600px]">
+        Loading chats...
+      </div>
+    )
+  }
 
   return (
     <div className="grid grid-cols-3 gap-4 h-[600px]">
       {/* Chat List */}
       <Card className="col-span-1">
-        <ScrollArea className="h-[600px]">
-          <CardContent className="p-4 space-y-4">
-            {loading ? (
-              <div className="text-center py-8 text-gray-500">
-                Loading chats...
-              </div>
-            ) : chats.length > 0 ? (
-              chats.map((chat) => (
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            Conversations
+            <Badge variant="secondary">{chats.length}</Badge>
+          </CardTitle>
+        </CardHeader>
+        <ScrollArea className="h-[500px]">
+          <CardContent className="space-y-4">
+            {chats.map(chat => {
+              const otherParticipant = getOtherParticipant(chat)
+              if (!otherParticipant) return null
+
+              return (
                 <div
                   key={chat.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors
-                    ${selectedChat?.id === chat.id ? 'bg-teal-50 border-l-4 border-teal-500' : ''}`}
+                  className={`p-4 rounded-lg cursor-pointer transition-colors ${
+                    selectedChat?.id === chat.id 
+                      ? 'bg-teal-50 border-l-4 border-teal-500' 
+                      : 'hover:bg-gray-100'
+                  }`}
                   onClick={() => setSelectedChat(chat)}
                 >
-                  <Avatar>
-                    <AvatarImage src={chat.userAvatar} alt={chat.userName} />
-                    <AvatarFallback>
-                      {chat.userName.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-medium truncate">{chat.userName}</p>
-                      <span className="text-xs text-gray-500">
-                        {formatDistanceToNow(chat.lastMessageTime, { addSuffix: true })}
-                      </span>
+                  <div className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarImage src={otherParticipant.avatar} />
+                      <AvatarFallback>{otherParticipant.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium truncate">{otherParticipant.name}</p>
+                        {chat.lastMessageTime && (
+                          <span className="text-xs text-gray-500">
+                            {formatDistanceToNow(chat.lastMessageTime, { addSuffix: true })}
+                          </span>
+                        )}
+                      </div>
+                      {chat.lastMessage && (
+                        <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
+                      )}
+                      {chat[`${doctorId}UnreadCount`] > 0 && (
+                        <Badge variant="secondary" className="mt-1">
+                          {chat[`${doctorId}UnreadCount`]} new
+                        </Badge>
+                      )}
                     </div>
-                    <p className="text-sm text-gray-500 truncate">{chat.lastMessage}</p>
                   </div>
-                  {chat.unreadCount > 0 && (
-                    <span className="bg-teal-500 text-white text-xs px-2 py-1 rounded-full">
-                      {chat.unreadCount}
-                    </span>
-                  )}
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                No active chats
+              )
+            })}
+            {chats.length === 0 && (
+              <div className="text-center text-gray-500 py-4">
+                No conversations yet
               </div>
             )}
           </CardContent>
@@ -138,18 +165,16 @@ export default function DoctorChats({ doctorId }: { doctorId: string }) {
             currentUser={{ 
               uid: doctorId,
               role: 'doctor',
-              displayName: 'Doctor',
-              photoURL: '/placeholder.svg'
+              ...selectedChat.participantDetails[doctorId]
             }}
             otherUser={{
-              id: selectedChat.userId,
-              name: selectedChat.userName,
-              avatar: selectedChat.userAvatar
+              id: selectedChat.participants.find(p => p !== doctorId) || '',
+              ...getOtherParticipant(selectedChat)
             }}
           />
         ) : (
           <div className="h-full flex items-center justify-center text-gray-500">
-            Select a chat to start messaging
+            Select a conversation to start chatting
           </div>
         )}
       </Card>

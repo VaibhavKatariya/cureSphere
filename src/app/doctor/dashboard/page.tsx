@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Clock, Users, MessageSquare, Settings, LogOut, FileText, Bell } from 'lucide-react'
+import { Calendar, Clock, Users, MessageSquare, Settings, LogOut, FileText, Bell, Scan as ScanIcon } from 'lucide-react'
 import DoctorAppointments from '@/components/doctor/appointments'
 import DoctorSchedule from '@/components/doctor/schedule'
 import Prescription from '@/components/doctor/prescription'
@@ -18,12 +18,21 @@ import DoctorPatients from '@/components/doctor/patients'
 import DoctorChats from '@/components/doctor/chats'
 import DoctorSettings from '@/components/doctor/settings'
 import { updateDoctorStatus } from '@/lib/utils/update-doctor-status'
+import { Badge } from "@/components/ui/badge"
+import DoctorScans from '@/components/doctor/scans'
 
 export default function DoctorDashboard() {
   const [user] = useAuthState(auth)
   const [doctorData, setDoctorData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+
+  const updateDoctorData = (newData: any) => {
+    setDoctorData(prev => ({
+      ...prev,
+      ...newData
+    }))
+  }
 
   useEffect(() => {
     const fetchDoctorData = async () => {
@@ -34,7 +43,10 @@ export default function DoctorDashboard() {
         const docSnap = await getDoc(docRef)
         
         if (docSnap.exists()) {
-          setDoctorData(docSnap.data())
+          setDoctorData({
+            ...docSnap.data(),
+            updateDoctorData // Add the update function to the data
+          })
         }
       } catch (error) {
         console.error('Error fetching doctor data:', error)
@@ -83,11 +95,25 @@ export default function DoctorDashboard() {
             />
             <div>
               <h1 className="text-2xl font-bold text-teal-800">{doctorData?.name}</h1>
-              <p className="text-teal-600">{doctorData?.specialty}</p>
+              <div className="text-teal-600">
+                <p>{doctorData?.specialty}</p>
+                <p className="text-sm">{doctorData?.qualifications}</p>
+                {doctorData?.experience && (
+                  <p className="text-sm">{doctorData.experience} years experience</p>
+                )}
+              </div>
+            </div>
+            <div className="ml-auto flex flex-col items-end">
+              {doctorData?.consultationFee && (
+                <p className="text-teal-600">₹{doctorData.consultationFee}/consultation</p>
+              )}
+              <Badge variant={doctorData?.isAvailable ? "success" : "secondary"}>
+                {doctorData?.isAvailable ? "Available" : "Unavailable"}
+              </Badge>
             </div>
             <Button
               variant="outline"
-              className="ml-auto text-teal-600 hover:text-teal-700 hover:bg-teal-50"
+              className="ml-4 text-teal-600 hover:text-teal-700 hover:bg-teal-50"
               onClick={() => auth.signOut()}
             >
               <LogOut className="w-4 h-4 mr-2" />
@@ -102,10 +128,6 @@ export default function DoctorDashboard() {
             <TabsTrigger value="appointments" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
               <Calendar className="w-4 h-4 mr-2" />
               Appointments
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
-              <Bell className="w-4 h-4 mr-2" />
-              Notifications
             </TabsTrigger>
             <TabsTrigger value="schedule" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
               <Clock className="w-4 h-4 mr-2" />
@@ -127,23 +149,14 @@ export default function DoctorDashboard() {
               <FileText className="w-4 h-4 mr-2" />
               Prescription
             </TabsTrigger>
+            <TabsTrigger value="scans" className="data-[state=active]:bg-teal-100 data-[state=active]:text-teal-800">
+              <ScanIcon className="w-4 h-4 mr-2" />
+              Scans
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="appointments">
             <DoctorAppointments doctorId={user.uid} />
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-xl font-semibold text-teal-800">
-                  Recent Notifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <NotificationsList doctorId={user.uid} />
-              </CardContent>
-            </Card>
           </TabsContent>
 
           <TabsContent value="schedule">
@@ -158,13 +171,17 @@ export default function DoctorDashboard() {
             <DoctorChats doctorId={user.uid} />
           </TabsContent>
 
-          {/* <TabsContent value="patients">
+          <TabsContent value="patients">
             <DoctorPatients doctorId={user.uid} />
           </TabsContent>
 
           <TabsContent value="settings">
             <DoctorSettings doctorData={doctorData} doctorId={user.uid} />
-          </TabsContent> */}
+          </TabsContent>
+
+          <TabsContent value="scans">
+            <DoctorScans doctorId={user.uid} />
+          </TabsContent>
         </Tabs>
       </div>
     </div>

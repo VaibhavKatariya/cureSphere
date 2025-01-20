@@ -62,10 +62,14 @@ export default function DoctorProfile() {
             role: 'doctor'
           }
         },
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         lastMessageTime: serverTimestamp(),
         [`${user.uid}UnreadCount`]: 0,
         [`${doctor.id}UnreadCount`]: 0
       }, { merge: true })
+
+      console.log('Chat initialized:', chatId)
     } catch (error) {
       console.error('Error initializing chat:', error)
       toast({
@@ -92,6 +96,7 @@ export default function DoctorProfile() {
 
     try {
       const callId = `call-${[user.uid, doctor.id].sort().join('-')}`
+      // First create the call document
       await setDoc(doc(db, 'calls', callId), {
         from: {
           id: user.uid,
@@ -105,6 +110,19 @@ export default function DoctorProfile() {
         timestamp: serverTimestamp(),
         expiresAt: new Date(Date.now() + 60000) // 1 minute from now
       })
+
+      // Create a notification for the doctor
+      const notificationId = `notif-${Date.now()}`
+      await setDoc(doc(db, 'notifications', notificationId), {
+        type: 'call',
+        message: `Incoming video call from ${user.displayName || 'User'}`,
+        doctorId: doctor.id,
+        userId: user.uid,
+        callId: callId, // Add the callId reference
+        read: false,
+        createdAt: serverTimestamp()
+      })
+
       setIsInCall(true)
       setShowChat(false)
       toast({
@@ -273,18 +291,36 @@ export default function DoctorProfile() {
             <div className="grid md:grid-cols-3 gap-6">
               <div className="md:col-span-2">
                 <h2 className="text-2xl font-semibold text-teal-800 mb-4">About</h2>
-                <p className="text-gray-600">{doctor.about}</p>
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium text-teal-700">Introduction</h3>
+                    <p className="text-gray-600">{doctor.about || 'No introduction available.'}</p>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium text-teal-700">Bio</h3>
+                    <p className="text-gray-600">{doctor.bio || 'No bio available.'}</p>
+                  </div>
+                </div>
 
                 <Separator className="my-6" />
 
                 <h2 className="text-2xl font-semibold text-teal-800 mb-4">Education</h2>
-                <ul className="list-disc list-inside text-gray-600">
+                <ul className="space-y-4">
                   {doctor.education?.map((edu, index) => (
-                    <li key={index} className="flex items-start mb-2">
-                      <GraduationCap className="w-5 h-5 mr-2 text-teal-600 flex-shrink-0 mt-1" />
-                      {edu}
+                    <li key={index} className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center gap-2">
+                        <GraduationCap className="w-5 h-5 text-teal-600" />
+                        <div>
+                          <h4 className="font-medium text-teal-800">{edu.degree}</h4>
+                          <p className="text-gray-600">{edu.institution}</p>
+                          <p className="text-sm text-gray-500">{edu.year}</p>
+                        </div>
+                      </div>
                     </li>
                   ))}
+                  {(!doctor.education || doctor.education.length === 0) && (
+                    <p className="text-gray-500 italic">No education information available.</p>
+                  )}
                 </ul>
               </div>
 
