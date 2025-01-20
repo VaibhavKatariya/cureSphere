@@ -21,6 +21,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/dashboard/page.jsx", "src/app/Firebase/config.js", "src/components/doctor/appointments.jsx", "src/components/ui/doctor-list.tsx", "src/app/doctor/[id]/page.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/dashboard/page.jsx", "src/app/Firebase/config.js", "src/components/doctor/appointments.jsx", "src/components/ui/doctor-list.tsx", "src/app/doctor/[id]/page.tsx", "src/app/ocr/page.jsx"],
   "exclude": ["node_modules"]
 }

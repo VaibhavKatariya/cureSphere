@@ -14,6 +14,7 @@ export default function ConsultationPage() {
   const [user] = useAuthState(auth)
   const params = useParams()
   const [otherUser, setOtherUser] = useState<any>(null)
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null)
   const [isInCall, setIsInCall] = useState(false)
   const [loading, setLoading] = useState(true)
   const searchParams = useSearchParams()
@@ -26,24 +27,34 @@ export default function ConsultationPage() {
   }, [searchParams])
 
   useEffect(() => {
-    const fetchOtherUser = async () => {
+    const fetchUsers = async () => {
       if (!user) return
 
       try {
-        const docRef = doc(db, 'users', params.id.toString())
-        const docSnap = await getDoc(docRef)
-        
-        if (docSnap.exists()) {
-          setOtherUser({ id: docSnap.id, ...docSnap.data() })
+        // Fetch the other user's document
+        const otherUserDocRef = doc(db, 'users', params.id.toString())
+        const otherUserDocSnap = await getDoc(otherUserDocRef)
+
+        if (otherUserDocSnap.exists()) {
+          setOtherUser({ id: otherUserDocSnap.id, ...otherUserDocSnap.data() })
+        }
+
+        // Fetch the current user's document to get their role
+        const currentUserDocRef = doc(db, 'users', user.uid)
+        const currentUserDocSnap = await getDoc(currentUserDocRef)
+
+        if (currentUserDocSnap.exists()) {
+          const currentUserData = currentUserDocSnap.data()
+          setCurrentUserRole(currentUserData?.role || null)
         }
       } catch (error) {
-        console.error('Error fetching user:', error)
+        console.error('Error fetching user data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchOtherUser()
+    fetchUsers()
   }, [user, params.id])
 
   if (loading || !user || !otherUser) {
@@ -73,7 +84,7 @@ export default function ConsultationPage() {
           currentUser={user}
           otherUser={otherUser}
           onEndCall={() => setIsInCall(false)}
-          isDoctor={user.role === 'doctor'}
+          isDoctor={currentUserRole === 'doctor'}
         />
       ) : (
         <ChatWindow
@@ -84,4 +95,4 @@ export default function ConsultationPage() {
       )}
     </div>
   )
-} 
+}

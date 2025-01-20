@@ -65,8 +65,8 @@ export default function DoctorProfile() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastMessageTime: serverTimestamp(),
-        [`${user.uid}UnreadCount`]: 0,
-        [`${doctor.id}UnreadCount`]: 0
+        [${user.uid}UnreadCount]: 0,
+        [${doctor.id}UnreadCount]: 0
       }, { merge: true })
 
       console.log('Chat initialized:', chatId)
@@ -95,7 +95,7 @@ export default function DoctorProfile() {
     }
 
     try {
-      const callId = `call-${[user.uid, doctor.id].sort().join('-')}`
+      const callId = call-${[user.uid, doctor.id].sort().join('-')}
       // First create the call document
       await setDoc(doc(db, 'calls', callId), {
         from: {
@@ -112,10 +112,10 @@ export default function DoctorProfile() {
       })
 
       // Create a notification for the doctor
-      const notificationId = `notif-${Date.now()}`
+      const notificationId = notif-${Date.now()}
       await setDoc(doc(db, 'notifications', notificationId), {
         type: 'call',
-        message: `Incoming video call from ${user.displayName || 'User'}`,
+        message: Incoming video call from ${user.displayName || 'User'},
         doctorId: doctor.id,
         userId: user.uid,
         callId: callId, // Add the callId reference
@@ -167,7 +167,7 @@ export default function DoctorProfile() {
     }
 
     try {
-      const chatRequestId = `chat-${[user.uid, doctor.id].sort().join('-')}`
+      const chatRequestId = chat-${[user.uid, doctor.id].sort().join('-')}
       await setDoc(doc(db, 'chatRequests', chatRequestId), {
         from: {
           id: user.uid,
@@ -225,7 +225,7 @@ export default function DoctorProfile() {
   }
 
   const chatId = user ? [user.uid, doctor.id].sort().join('-') : null
-  const callId = chatId ? `call-${chatId}` : null
+  const callId = chatId ? call-${chatId} : null
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
