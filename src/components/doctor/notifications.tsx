@@ -3,206 +3,210 @@
 import { useEffect, useState } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth, db } from '@/app/Firebase/config'
-import { collection, query, where, onSnapshot, doc, updateDoc, Timestamp } from 'firebase/firestore'
+import { 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  orderBy, 
+  Timestamp, 
+  updateDoc,
+  doc,
+  onSnapshot
+} from 'firebase/firestore'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MessageSquare, Phone } from 'lucide-react'
+import { MessageSquare, Phone, Video } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { toast } from "@/hooks/use-toast"
 
-interface NotificationItem {
+interface Notification {
   id: string
-  type: 'call' | 'chat'
-  from: {
-    id: string
-    name: string
-  }
-  timestamp: Date
+  type: string
+  message: string
+  read: boolean
+  createdAt: Timestamp
+  userId: string
+  callId?: string
+  chatId?: string
 }
 
 export default function DoctorNotifications() {
   const [user] = useAuthState(auth)
   const router = useRouter()
-  const [notifications, setNotifications] = useState<NotificationItem[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [videoCallNotification, setVideoCallNotification] = useState<Notification | null>(null)
 
   useEffect(() => {
-    if (!user) return
-    const cleanupFunctions: Array<() => void> = []
+    let isSubscribed = true
+    let unsubscribe: (() => void) | undefined
 
-    // Listen for call requests
-    const callsUnsubscribe = onSnapshot(
-      query(
-        collection(db, 'calls'),
-        where('to.id', '==', user.uid),
-        where('status', '==', 'requesting')
-      ),
-      (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            const data = change.doc.data()
-            // Play notification sound
-            const audio = new Audio('/notification.mp3')
-            audio.play()
-            
-            setNotifications(prev => [...prev, {
-              id: change.doc.id,
-              type: 'call',
-              from: data.from,
-              timestamp: data.timestamp?.toDate() || new Date()
-            }])
+    const setupNotifications = async () => {
+      if (!user?.uid) return
 
-            // Auto-remove after 1 minute
-            setTimeout(() => {
-              setNotifications(prev => prev.filter(n => n.id !== change.doc.id))
-            }, 60000)
+      try {
+        const q = query(
+          collection(db, 'notifications'),
+          where('doctorId', '==', user.uid),
+          where('read', '==', false),
+          orderBy('createdAt', 'desc')
+        )
+
+        unsubscribe = onSnapshot(q, (snapshot) => {
+          if (!isSubscribed) return
+
+          const notifs = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          })) as Notification[]
+          
+          setNotifications(notifs)
+
+          // Show video call dialog for new call notifications
+          const newCallNotif = notifs.find(n => n.type === 'call')
+          if (newCallNotif) {
+            console.log('New video call notification:', newCallNotif)
+            setVideoCallNotification(newCallNotif)
           }
-          if (change.type === 'modified' || change.type === 'removed') {
-            setNotifications(prev => prev.filter(n => n.id !== change.doc.id))
-          }
-        })
-      }
-    )
-    cleanupFunctions.push(callsUnsubscribe)
 
-    // Listen for chat requests
-    const chatsUnsubscribe = onSnapshot(
-      query(
-        collection(db, 'chatRequests'),
-        where('to.id', '==', user.uid),
-        where('status', '==', 'pending')
-      ),
-      (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'added') {
-            const data = change.doc.data()
-            // Play notification sound
-            const audio = new Audio('/notification.mp3')
-            audio.play()
-            
-            setNotifications(prev => [...prev, {
-              id: change.doc.id,
-              type: 'chat',
-              from: data.from,
-              timestamp: data.timestamp?.toDate() || new Date()
-            }])
-
-            // Auto-remove after 1 minute
-            setTimeout(() => {
-              setNotifications(prev => prev.filter(n => n.id !== change.doc.id))
-            }, 60000)
-          }
-          if (change.type === 'modified' || change.type === 'removed') {
-            setNotifications(prev => prev.filter(n => n.id !== change.doc.id))
+          // Show toast for other notifications
+          const newNotif = notifs.find(n => n.type !== 'call')
+          if (newNotif) {
+            toast({
+              title: "New Notification",
+              description: newNotif.message,
+            })
           }
         })
+      } catch (error) {
+        console.error('Error setting up notifications:', error)
       }
-    )
-    cleanupFunctions.push(chatsUnsubscribe)
+    }
+
+    setupNotifications()
 
     return () => {
-      cleanupFunctions.forEach(cleanup => cleanup())
+      isSubscribed = false
+      if (unsubscribe) {
+        try {
+          unsubscribe()
+        } catch (error) {
+          console.error('Error unsubscribing:', error)
+        }
+      }
     }
-  }, [user])
+  }, [user?.uid])
 
-  const handleAcceptCall = async (callId: string, userId: string) => {
+  const handleAcceptCall = async (notification: Notification) => {
+    if (!user?.uid) return
+
     try {
-      await updateDoc(doc(db, 'calls', callId), {
+      await updateDoc(doc(db, 'calls', notification.callId || notification.id), {
         status: 'accepted',
         acceptedAt: Timestamp.now()
       })
-      router.push(`/consultation/${userId}?call=true`)
+
+      await updateDoc(doc(db, 'notifications', notification.id), {
+        read: true
+      })
+
+      setVideoCallNotification(null)
+      router.push(`/consultation/${notification.userId}?call=true`)
     } catch (error) {
       console.error('Error accepting call:', error)
+      toast({
+        title: "Error",
+        description: "Failed to accept call",
+        variant: "destructive"
+      })
     }
   }
 
-  const handleDeclineCall = async (callId: string) => {
+  const handleDeclineCall = async (notification: Notification) => {
+    if (!user?.uid) return
+
     try {
-      await updateDoc(doc(db, 'calls', callId), {
+      await updateDoc(doc(db, 'calls', notification.callId || notification.id), {
         status: 'declined',
         declinedAt: Timestamp.now()
       })
-      setNotifications(prev => prev.filter(n => n.id !== callId))
+
+      await updateDoc(doc(db, 'notifications', notification.id), {
+        read: true
+      })
+
+      setVideoCallNotification(null)
+      setNotifications(prev => prev.filter(n => n.id !== notification.id))
     } catch (error) {
       console.error('Error declining call:', error)
-    }
-  }
-
-  const handleAcceptChat = async (chatId: string, userId: string) => {
-    try {
-      await updateDoc(doc(db, 'chatRequests', chatId), {
-        status: 'accepted',
-        acceptedAt: Timestamp.now()
+      toast({
+        title: "Error",
+        description: "Failed to decline call",
+        variant: "destructive"
       })
-      router.push(`/consultation/${userId}`)
-    } catch (error) {
-      console.error('Error accepting chat:', error)
     }
   }
-
-  const handleDeclineChat = async (chatId: string) => {
-    try {
-      await updateDoc(doc(db, 'chatRequests', chatId), {
-        status: 'declined',
-        declinedAt: Timestamp.now()
-      })
-      setNotifications(prev => prev.filter(n => n.id !== chatId))
-    } catch (error) {
-      console.error('Error declining chat:', error)
-    }
-  }
-
-  if (notifications.length === 0) return null
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-4 w-80">
-      {notifications.map((notification) => (
-        <Card key={notification.id} className="bg-white border-l-4 border-l-teal-500 shadow-lg">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-teal-100 rounded-full">
-                  {notification.type === 'call' ? (
-                    <Phone className="h-5 w-5 text-teal-600" />
-                  ) : (
-                    <MessageSquare className="h-5 w-5 text-teal-600" />
-                  )}
+    <>
+      {/* Video Call Dialog */}
+      <Dialog 
+        open={!!videoCallNotification} 
+        onOpenChange={() => setVideoCallNotification(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Incoming Video Call</DialogTitle>
+            <DialogDescription>
+              {videoCallNotification?.message}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end gap-4 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => videoCallNotification && handleDeclineCall(videoCallNotification)}
+              className="text-red-600 hover:text-red-700"
+            >
+              Decline
+            </Button>
+            <Button
+              onClick={() => videoCallNotification && handleAcceptCall(videoCallNotification)}
+              className="bg-teal-600 hover:bg-teal-700"
+            >
+              Accept Call
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-4 w-80">
+        {notifications
+          .filter(notification => notification.type !== 'call')
+          .map((notification) => (
+            <Card key={notification.id} className="bg-white border-l-4 border-l-teal-500 shadow-lg">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-teal-100 rounded-full">
+                      <MessageSquare className="h-5 w-5 text-teal-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium">{notification.message}</p>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-medium">{notification.from.name}</p>
-                  <p className="text-sm text-gray-500">
-                    {notification.type === 'call' ? 'Video Call Request' : 'Chat Request'}
-                  </p>
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2 mt-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => 
-                  notification.type === 'call' 
-                    ? handleDeclineCall(notification.id)
-                    : handleDeclineChat(notification.id)
-                }
-                className="flex-1 text-red-600 hover:text-red-700"
-              >
-                Decline
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => 
-                  notification.type === 'call'
-                    ? handleAcceptCall(notification.id, notification.from.id)
-                    : handleAcceptChat(notification.id, notification.from.id)
-                }
-                className="flex-1 bg-teal-600 hover:bg-teal-700"
-              >
-                Accept
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+              </CardContent>
+            </Card>
+          ))}
+      </div>
+    </>
   )
-} 
+}

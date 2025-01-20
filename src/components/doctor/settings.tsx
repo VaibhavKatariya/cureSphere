@@ -1,246 +1,251 @@
 'use client'
 
 import { useState } from 'react'
-import { db } from '@/app/Firebase/config'
 import { doc, updateDoc } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
+import { db, storage } from '@/app/Firebase/config'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Plus, X } from 'lucide-react'
-// import { toast } from "@/components/ui/toast"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { toast } from "@/hooks/use-toast"
 
-interface DoctorData {
-  name: string
-  specialty: string
-  hospital: string
-  experience: string
-  bio?: string
-  consultationFee?: string
-  avatar: string
-  availability: string
-  acceptingNewPatients?: boolean
-  about?: string
-  education?: string[]
-  languages?: string[]
-}
-
-export default function DoctorSettings({ 
-  doctorData, 
-  doctorId 
-}: { 
-  doctorData: DoctorData
-  doctorId: string 
-}) {
-  const [formData, setFormData] = useState(doctorData)
+export default function DoctorSettings({ doctorId, doctorData }: { doctorId: string; doctorData: any }) {
   const [loading, setLoading] = useState(false)
-  const [newEducation, setNewEducation] = useState('')
-  const [newLanguage, setNewLanguage] = useState('')
+  const [formData, setFormData] = useState({
+    name: doctorData?.name || '',
+    email: doctorData?.email || '',
+    phone: doctorData?.phone || '',
+    specialty: doctorData?.specialty || '',
+    qualifications: doctorData?.qualifications || '',
+    experience: doctorData?.experience || '',
+    bio: doctorData?.bio || '',
+    consultationFee: doctorData?.consultationFee || '',
+    isAvailable: doctorData?.isAvailable || false,
+    avatar: doctorData?.avatar || '/placeholder.svg',
+    languages: doctorData?.languages || ['English'],
+    address: doctorData?.address || '',
+    hospitalAffiliation: doctorData?.hospitalAffiliation || ''
+  })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
 
-  // const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (!e.target.files?.[0]) return
-
-  //   try {
-  //     // setLoading(true)
-  //     // const file = e.target.files[0]
-  //     // // const storageRef = ref(storage, `doctors/${doctorId}/avatar`)
-  //     // await uploadBytes(storageRef, file)
-  //     // const url = await getDownloadURL(storageRef)
+    try {
+      setLoading(true)
+      const storageRef = ref(storage, `doctors/${doctorId}/profile/${file.name}`)
+      const snapshot = await uploadBytes(storageRef, file)
+      const downloadURL = await getDownloadURL(snapshot.ref)
       
-  //     // setFormData(prev => ({ ...prev, avatar: url }))
-  //     // await updateDoc(doc(db, 'doctors', doctorId), { avatar: url })
-  //     // toast({
-  //     //   title: "Success",
-  //     //   description: "Profile picture updated successfully",
-  //     // })
-  //   } catch (error) {
-  //     console.error('Error uploading image:', error)
-  //     toast({
-  //       title: "Error",
-  //       description: "Failed to update profile picture",
-  //       variant: "destructive",
-  //     })
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // // }
+      setFormData(prev => ({ ...prev, avatar: downloadURL }))
+      await updateDoc(doc(db, 'doctors', doctorId), { avatar: downloadURL })
+      
+      toast({
+        title: "Success",
+        description: "Profile picture updated successfully"
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to upload profile picture",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
 
     try {
-      await updateDoc(doc(db, 'doctors', doctorId), formData)
-      console.log('Profile updated successfully')
+      // Format the data before saving
+      const updatedData = {
+        ...formData,
+        consultationFee: Number(formData.consultationFee),
+        experience: Number(formData.experience),
+        updatedAt: new Date(),
+        // Add any computed or formatted fields here
+      }
+
+      const docRef = doc(db, 'doctors', doctorId)
+      await updateDoc(docRef, updatedData)
+
+      // Update the parent component's state
+      if (doctorData && typeof doctorData.updateDoctorData === 'function') {
+        doctorData.updateDoctorData(updatedData)
+      }
+
+      toast({
+        title: "Success",
+        description: "Profile updated successfully"
+      })
     } catch (error) {
       console.error('Error updating profile:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive"
+      })
     } finally {
       setLoading(false)
     }
-  }
-
-  const addEducation = () => {
-    if (newEducation.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        education: [...(prev.education || []), newEducation.trim()]
-      }))
-      setNewEducation('')
-    }
-  }
-
-  const removeEducation = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      education: prev.education?.filter((_, i) => i !== index)
-    }))
-  }
-
-  const addLanguage = () => {
-    if (newLanguage.trim()) {
-      setFormData(prev => ({
-        ...prev,
-        languages: [...(prev.languages || []), newLanguage.trim()]
-      }))
-      setNewLanguage('')
-    }
-  }
-
-  const removeLanguage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      languages: prev.languages?.filter((_, i) => i !== index)
-    }))
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Professional Information</CardTitle>
+          <CardTitle>Profile Picture</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            <div>
-              <Label htmlFor="about">About Me</Label>
-              <Textarea
-                id="about"
-                name="about"
-                value={formData.about || ''}
-                onChange={handleChange}
-                rows={6}
-                placeholder="Write a brief description about your medical practice, experience, and approach..."
-                className="mt-1"
-              />
-            </div>
+        <CardContent className="flex items-center gap-4">
+          <Avatar className="w-24 h-24">
+            <AvatarImage src={formData.avatar} />
+            <AvatarFallback>{formData.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <Input
+            type="file"
+            accept="image/*"
+            onChange={handleImageUpload}
+            disabled={loading}
+          />
+        </CardContent>
+      </Card>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Basic Information</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Education & Qualifications</Label>
-              <div className="space-y-2">
-                {formData.education?.map((edu, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <span className="flex-1 p-2 bg-gray-50 rounded">{edu}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeEducation(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <div className="flex gap-2">
-                  <Input
-                    value={newEducation}
-                    onChange={(e) => setNewEducation(e.target.value)}
-                    placeholder="Add education (e.g., MBBS - University Name)"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addEducation}
-                    variant="outline"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <Label>Languages Spoken</Label>
-              <div className="space-y-2">
-                {formData.languages?.map((lang, index) => (
-                  <div key={index} className="flex items-center gap-2">
-                    <span className="flex-1 p-2 bg-gray-50 rounded">{lang}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeLanguage(index)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <div className="flex gap-2">
-                  <Input
-                    value={newLanguage}
-                    onChange={(e) => setNewLanguage(e.target.value)}
-                    placeholder="Add language"
-                  />
-                  <Button
-                    type="button"
-                    onClick={addLanguage}
-                    variant="outline"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="consultationFee">Consultation Fee (₹)</Label>
+              <label className="text-sm font-medium">Full Name</label>
               <Input
-                id="consultationFee"
-                name="consultationFee"
-                type="number"
-                value={formData.consultationFee || ''}
-                onChange={handleChange}
-                placeholder="Enter your consultation fee"
-                className="mt-1"
+                value={formData.name}
+                onChange={e => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                disabled={loading}
               />
             </div>
-
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={formData.acceptingNewPatients}
-                onCheckedChange={(checked) => 
-                  setFormData(prev => ({ ...prev, acceptingNewPatients: checked }))
-                }
+            <div>
+              <label className="text-sm font-medium">Email</label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={e => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                disabled={loading}
               />
-              <Label>Accepting New Patients</Label>
             </div>
+          </div>
+          <div>
+            <label className="text-sm font-medium">Phone</label>
+            <Input
+              value={formData.phone}
+              onChange={e => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Address</label>
+            <Textarea
+              value={formData.address}
+              onChange={e => setFormData(prev => ({ ...prev, address: e.target.value }))}
+              disabled={loading}
+            />
           </div>
         </CardContent>
       </Card>
 
-      <Button 
-        type="submit" 
-        className="w-full bg-teal-600 hover:bg-teal-700"
-        disabled={loading}
-      >
-        {loading ? 'Saving...' : 'Save Changes'}
-      </Button>
+      <Card>
+        <CardHeader>
+          <CardTitle>Professional Details</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div>
+            <label className="text-sm font-medium">Specialty</label>
+            <Input
+              value={formData.specialty}
+              onChange={e => setFormData(prev => ({ ...prev, specialty: e.target.value }))}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Qualifications</label>
+            <Input
+              value={formData.qualifications}
+              onChange={e => setFormData(prev => ({ ...prev, qualifications: e.target.value }))}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Years of Experience</label>
+            <Input
+              type="number"
+              value={formData.experience}
+              onChange={e => setFormData(prev => ({ ...prev, experience: e.target.value }))}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Hospital Affiliation</label>
+            <Input
+              value={formData.hospitalAffiliation}
+              onChange={e => setFormData(prev => ({ 
+                ...prev, 
+                hospitalAffiliation: e.target.value 
+              }))}
+              disabled={loading}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium">Bio</label>
+            <Textarea
+              value={formData.bio}
+              onChange={e => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+              disabled={loading}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Consultation Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label className="text-sm font-medium">Consultation Fee (₹)</label>
+            <Input
+              type="number"
+              value={formData.consultationFee}
+              onChange={e => setFormData(prev => ({ 
+                ...prev, 
+                consultationFee: e.target.value 
+              }))}
+              disabled={loading}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={formData.isAvailable}
+              onCheckedChange={checked => 
+                setFormData(prev => ({ ...prev, isAvailable: checked }))
+              }
+              disabled={loading}
+            />
+            <label className="text-sm font-medium">Available for Consultations</label>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button type="submit" disabled={loading}>
+          {loading ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </div>
     </form>
   )
 } 
