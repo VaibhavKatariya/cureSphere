@@ -4,30 +4,37 @@ import { useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth, db } from '@/app/Firebase/config'
-import { doc, getDoc, updateDoc, onSnapshot, query, collection, where } from 'firebase/firestore'
+import { 
+  doc, 
+  getDoc, 
+  updateDoc, 
+  onSnapshot, 
+  query, 
+  collection, 
+  where,
+  setDoc,
+  serverTimestamp 
+} from 'firebase/firestore'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { VideoIcon, MessageSquare, Star, Clock, Globe, DollarSign, GraduationCap } from 'lucide-react'
-// ...existing code...
 import { toast } from "@/hooks/use-toast"
-// ...existing code...
 import ChatWindow from '@/components/chat/chat-window'
 import VideoCall from '@/components/video/video-call'
 import { useDocument } from 'react-firebase-hooks/firestore'
-import { setDoc, serverTimestamp } from 'firebase/firestore'
 import { generateChatId } from '@/lib/utils'
 
 export default function DoctorProfile() {
   const [user] = useAuthState(auth)
   const params = useParams()
-  const [doctor, setDoctor] = useState(null)
+  const [doctor, setDoctor] = useState<any>(null)
   const [showChat, setShowChat] = useState(false)
   const [isInCall, setIsInCall] = useState(false)
 
   // Fetching the document using useDocument hook
-  const [value, loading, error] = useDocument(doc(db, 'doctors', params.id))
+  const [value, loading, error] = useDocument(doc(db, 'doctors', params.id as string))
 
   useEffect(() => {
     if (value && value.exists()) {
@@ -36,7 +43,7 @@ export default function DoctorProfile() {
   }, [value])
 
   const handleChat = async () => {
-    if (!user) {
+    if (!user || !doctor) {
       toast({
         title: "Authentication Required",
         description: "Please sign in to chat with the doctor",
@@ -85,7 +92,7 @@ export default function DoctorProfile() {
   }
 
   const handleVideoCall = async () => {
-    if (!user) {
+    if (!user || !doctor) {
       toast({
         title: "Authentication Required",
         description: "Please sign in to start a video call",
@@ -118,7 +125,7 @@ export default function DoctorProfile() {
         message: `Incoming video call from ${user.displayName || 'User'}`,
         doctorId: doctor.id,
         userId: user.uid,
-        callId: callId, // Add the callId reference
+        callId: callId,
         read: false,
         createdAt: serverTimestamp()
       })
@@ -157,7 +164,7 @@ export default function DoctorProfile() {
   }
 
   const handleStartChat = async () => {
-    if (!user) {
+    if (!user || !doctor) {
       toast({
         title: "Authentication Required",
         description: "Please sign in to chat with the doctor",

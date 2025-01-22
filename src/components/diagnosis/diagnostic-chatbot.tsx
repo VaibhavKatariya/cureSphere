@@ -59,11 +59,7 @@ export default function DiagnosticChatbot() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to get response')
-      }
-
-      if (data.error) {
-        throw new Error(data.error)
+        throw new Error(data.details || data.error || 'Failed to get response')
       }
 
       setMessages(prev => [...prev, { role: 'bot', content: data.response }])

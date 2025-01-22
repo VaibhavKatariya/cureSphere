@@ -1,15 +1,18 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import { NextResponse } from 'next/server'
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY!)
+// Add debug logging
+console.log('API Key present:', !!process.env.GOOGLE_API_KEY)
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '')
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-pro",
+  model: "gemini-1.5-flash",
   generationConfig: {
     temperature: 0.7,
     topP: 0.8,
     topK: 40,
-    maxOutputTokens: 1024,
+    maxOutputTokens: 2048,
   },
 })
 
@@ -29,36 +32,63 @@ const INITIAL_PROMPT = `You are a medical diagnostic assistant. Your role is to 
 Remember to be empathetic and professional.`
 
 export async function POST(req: Request) {
-  if (!process.env.GOOGLE_API_KEY) {
-    console.error('GOOGLE_API_KEY is not defined')
-    return NextResponse.json(
-      { error: 'API key not configured' },
-      { status: 500 }
-    )
-  }
-
+  console.log('Received request to /api/diagnose')
+  
   try {
+    if (!process.env.GOOGLE_API_KEY) {
+      console.error('API key is missing')
+      return NextResponse.json(
+        { error: 'API key not configured' },
+        { status: 500 }
+      )
+    }
+
     const { message, history } = await req.json()
+    console.log('Received message:', message)
+    console.log('History length:', history.length)
 
-    // Combine history and current message into a single prompt
-    const conversationHistory = history
-      .map((msg: any) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
-      .join('\n')
+    try {
+      // Prepare the conversation history
+      let conversationHistory = ''
+      if (history.length > 0) {
+        history.forEach((msg: any) => {
+          conversationHistory += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`
+        })
+      }
 
-    const fullPrompt = `${INITIAL_PROMPT}\n\nConversation history:\n${conversationHistory}\n\nUser: ${message}\nAssistant:`
+      // Combine everything into a single user message
+      const userMessage = `
+Context: ${INITIAL_PROMPT}
 
-    const result = await model.generateContent(fullPrompt)
-    const response = await result.response.text()
+Previous conversation:
+${conversationHistory}
+Current user message: ${message}
 
-    return NextResponse.json({ response })
+Please respond as a medical assistant, following the guidelines provided in the context.`
+
+      console.log('Sending message to Gemini')
+      const result = await model.generateContent(userMessage)
+      const response = await result.response.text()
+
+      if (!response) {
+        throw new Error('Empty response from AI model')
+      }
+
+      console.log('Sending response back to client')
+      return NextResponse.json({ response })
+    } catch (modelError: any) {
+      console.error('Gemini API Error:', modelError)
+      throw new Error(`Gemini API Error: ${modelError.message}`)
+    }
   } catch (error: any) {
     console.error('Diagnosis API Error:', error)
-    return NextResponse.json(
-      { 
-        error: 'Failed to process request',
-        details: error.message 
-      },
-      { status: 500 }
-    )
+    
+    const errorResponse = {
+      error: 'Failed to process request',
+      details: error.message,
+      ...(process.env.NODE_ENV === 'development' && { stack: error.stack }),
+    }
+    
+    return NextResponse.json(errorResponse, { status: 500 })
   }
 } 

@@ -1,49 +1,48 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { useCreateUserWithEmailAndPassword, useAuthState } from 'react-firebase-hooks/auth'
-import { auth, db } from '@/app/Firebase/config'
-import { doc, setDoc } from 'firebase/firestore'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, Mail, Lock, Phone, Stethoscope, BookOpen } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card"
+import { useState, useEffect } from 'react';
+import { useCreateUserWithEmailAndPassword, useAuthState } from 'react-firebase-hooks/auth';
+import { auth, db } from '@/app/Firebase/config';
+import { doc, setDoc } from 'firebase/firestore';
+import { updateProfile } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { User, Mail, Lock, Phone } from 'lucide-react';
 
 export default function SignUp() {
-  const [userType, setUserType] = useState('user')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
-  const [age, setAge] = useState('')
-  const [sex, setSex] = useState('male')
-  const [error, setError] = useState('')
-  
-  const [createUserWithEmailAndPassword, user, loading, firebaseError] = 
-    useCreateUserWithEmailAndPassword(auth)
-  const [authUser, authLoading] = useAuthState(auth)
-  const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [sex, setSex] = useState('male');
+  const [error, setError] = useState('');
+
+  const [createUserWithEmailAndPassword, user, loading, firebaseError] =
+    useCreateUserWithEmailAndPassword(auth);
+  const [authUser, authLoading] = useAuthState(auth);
+  const router = useRouter();
 
   useEffect(() => {
     if (authUser) {
-      router.push('/dashboard')
+      router.push('/dashboard');
     }
-  }, [authUser, router])
+  }, [authUser, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
+    e.preventDefault();
+    setError('');
 
     if (!email || !password || !name || !age || !sex) {
-      setError('Please fill in all fields.')
-      return
+      setError('Please fill in all fields.');
+      return;
     }
 
     try {
-      const result = await createUserWithEmailAndPassword(email, password)
+      const result = await createUserWithEmailAndPassword(email, password);
       if (result?.user) {
         // Create user profile in Firestore
         await setDoc(doc(db, 'users', result.user.uid), {
@@ -58,18 +57,18 @@ export default function SignUp() {
           isPremium: false,
           premiumType: null,
           videoCallsRemaining: 0,
-          prescriptionsRemaining: 0
-        })
+          prescriptionsRemaining: 0,
+        });
         // Update the user's display name in Firebase Auth
-        await result.user.updateProfile({
-          displayName: name
-        })
+        await updateProfile(result.user, {
+          displayName: name,
+        });
       }
     } catch (err) {
-      setError('Failed to create account. Please try again.')
-      console.error('Signup error:', err)
+      setError('Failed to create account. Please try again.');
+      console.error('Signup error:', err);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-teal-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -81,11 +80,7 @@ export default function SignUp() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <Tabs defaultValue="user" className="w-full" onValueChange={(value) => setUserType(value)}>
-            <TabsList className="grid w-full grid-cols-2 mb-8">
-              <TabsTrigger value="user">User</TabsTrigger>
-              <TabsTrigger value="doctor">Doctor</TabsTrigger>
-            </TabsList>
+          <Tabs defaultValue="user" className="w-full">
             <TabsContent value="user">
               <form onSubmit={handleSignup} className="space-y-6">
                 {error && (
@@ -98,13 +93,29 @@ export default function SignUp() {
                     <User className="w-5 h-5 mr-2" />
                     Name
                   </Label>
-                  <Input id="name" name="name" type="text" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1" />
+                  <Input
+                    id="name"
+                    name="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="age" className="flex items-center">
                     Age
                   </Label>
-                  <Input id="age" name="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} required className="mt-1" />
+                  <Input
+                    id="age"
+                    name="age"
+                    type="number"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="sex" className="flex items-center">
@@ -126,14 +137,31 @@ export default function SignUp() {
                     <Mail className="w-5 h-5 mr-2" />
                     Email address
                   </Label>
-                  <Input id="email" name="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required className="mt-1" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="password" className="flex items-center">
                     <Lock className="w-5 h-5 mr-2" />
                     Password
                   </Label>
-                  <Input id="password" name="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="mt-1" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="mt-1"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="phone" className="flex items-center">
@@ -143,66 +171,11 @@ export default function SignUp() {
                   <Input id="phone" name="phone" type="tel" className="mt-1" />
                 </div>
                 <div>
-                  <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white">
+                  <Button
+                    type="submit"
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white"
+                  >
                     Sign Up
-                  </Button>
-                </div>
-              </form>
-            </TabsContent>
-            <TabsContent value="doctor">
-              <form className="space-y-6" action="#" method="POST">
-                <div>
-                  <Label htmlFor="doctor-name" className="flex items-center">
-                    <User className="w-5 h-5 mr-2" />
-                    Name
-                  </Label>
-                  <Input id="doctor-name" name="name" type="text" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="doctor-email" className="flex items-center">
-                    <Mail className="w-5 h-5 mr-2" />
-                    Email address
-                  </Label>
-                  <Input id="doctor-email" name="email" type="email" autoComplete="email" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="license" className="flex items-center">
-                    <Stethoscope className="w-5 h-5 mr-2" />
-                    Medical License Number
-                  </Label>
-                  <Input id="license" name="license" type="text" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="specialization" className="flex items-center">
-                    <BookOpen className="w-5 h-5 mr-2" />
-                    Specialization
-                  </Label>
-                  <Input id="specialization" name="specialization" type="text" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="doctor-phone" className="flex items-center">
-                    <Phone className="w-5 h-5 mr-2" />
-                    Phone Number
-                  </Label>
-                  <Input id="doctor-phone" name="phone" type="tel" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="doctor-password" className="flex items-center">
-                    <Lock className="w-5 h-5 mr-2" />
-                    Password
-                  </Label>
-                  <Input id="doctor-password" name="password" type="password" required className="mt-1" />
-                </div>
-                <div>
-                  <Label htmlFor="confirm-password" className="flex items-center">
-                    <Lock className="w-5 h-5 mr-2" />
-                    Confirm Password
-                  </Label>
-                  <Input id="confirm-password" name="confirm-password" type="password" required className="mt-1" />
-                </div>
-                <div>
-                  <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700 text-white">
-                    Sign Up as Doctor
                   </Button>
                 </div>
               </form>
@@ -220,13 +193,36 @@ export default function SignUp() {
               </div>
             </div>
             <div className="mt-6">
-              <Link href="/signin" className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-teal-600 hover:bg-gray-50">
+              <Link
+                href="/signin"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-teal-600 hover:bg-gray-50"
+              >
                 Sign In
+              </Link>
+            </div>
+          </div>
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">
+                  Are you a doctor?
+                </span>
+              </div>
+            </div>
+            <div className="mt-6">
+              <Link
+                href="/doctor/signin"
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-teal-600 hover:bg-gray-50"
+              >
+                Sign In as Doctor
               </Link>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
