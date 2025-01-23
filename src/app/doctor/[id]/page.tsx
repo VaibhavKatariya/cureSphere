@@ -74,6 +74,8 @@ export default function DoctorProfile() {
         lastMessageTime: serverTimestamp(),
         [`${user.uid}UnreadCount`]: 0,
         [`${doctor.id}UnreadCount`]: 0
+        [${user.uid}UnreadCount]: 0,
+        [${doctor.id}UnreadCount]: 0
       }, { merge: true })
 
       console.log('Chat initialized:', chatId)
