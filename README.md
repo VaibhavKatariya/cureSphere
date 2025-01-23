@@ -1,9 +1,9 @@
-
-# CureSphere
+# CureSphere  
 
 CureSphere is an AI-powered healthcare platform designed to revolutionize disease detection and preventive care. By leveraging advanced **AI technologies**, **Next.js** for seamless development, **Firebase** for authentication and database management, and a **Symptom Checker API**, CureSphere empowers individuals to assess their health and take proactive steps toward well-being.  
 
-## 🚀 **Features**
+
+## 🚀 **Features**  
 
 - **AI-Based Symptom Checker**  
   Input symptoms to receive an AI-driven analysis and potential health insights.  
@@ -15,19 +15,26 @@ CureSphere is an AI-powered healthcare platform designed to revolutionize diseas
   Receive actionable tips to improve health and reduce potential risks.  
 
 - **Telemedicine Integration**  
-  Connect with healthcare professionals for consultations (planned future enhancement).
+  Connect with healthcare professionals for consultations (planned future enhancement). 
 
 - **Prescription Document Analysis**  
-  Take a photo of your Doctor's medical prescription and it will automatically detect only the medicines' name.
-    > **API for OCR (Optical Character Recognition)**: We have developed an API that uses OCR technology to extract text from medical prescriptions. You can find the API repo [here](https://github.com/lakshaygupta2005/OCR-regex).
+  Take a photo of your Doctor's medical prescription and it will automatically detect only the medicines' name and also give the details and side-effects of the medicine.
+    >- **API for OCR (Optical Character Recognition)**: We have developed an API that uses OCR technology to extract text from medical prescriptions. You can find the API repo [here](https://github.com/lakshaygupta2005/OCR-regex).
 
-## 🛠️ **Tech Stack**
+    >- **API for fetching Medicine Information**: We have developed an API that gives us the salt, uses and side-effects of the medicine that allows the user to make an informed choice. You can find the API repo [here](https://github.com/jainrochak05/Medine_Data).
+
+
+
+
+## 🛠️ **Tech Stack**  
 
 - **Frontend and Backend Framework**: [Next.js](https://nextjs.org/)  
 - **Authentication and Database**: [Firebase](https://firebase.google.com/)  
 - **Symptom Checker**: Symptom Checker API  
 
-## 📋 **Installation and Setup**
+
+
+## 📋 **Installation and Setup**  
 
 Follow these steps to set up CureSphere on your local system:
 
@@ -67,7 +74,7 @@ Visit `http://localhost:3000` to view the application.
 
 ---
 
-## 🔒 **Authentication**
+## 🔒 **Authentication**  
 
 CureSphere uses **Firebase Authentication** to manage user signups and logins. It supports:  
 - **Email/Password Authentication**  
@@ -75,7 +82,7 @@ CureSphere uses **Firebase Authentication** to manage user signups and logins. I
 
 ---
 
-## 📅 **Roadmap**
+## 📅 **Roadmap**  
 
 ### Current Features:
 - Symptom Checker Integration
@@ -89,7 +96,7 @@ CureSphere uses **Firebase Authentication** to manage user signups and logins. I
 
 ---
 
-## 👨‍💻 **Contributing**
+## 👨‍💻 **Contributing**  
 
 We welcome contributions to enhance CureSphere! Follow these steps:  
 1. Fork the repository.  
@@ -100,41 +107,25 @@ We welcome contributions to enhance CureSphere! Follow these steps:
 
 ---
 
-## ⚖️ **License**
+## ⚖️ **License**  
 
 This project is licensed under the **MIT License**.  
 
 ---
 
-## 🏆 **Acknowledgments**
+## 🏆 **Acknowledgments**  
 
 - Hacking Winters Hackathon at **Jaypee Institute of Information technology**.  
 - Open-source libraries and APIs used in this project.  
 
 ---
 
-## 📞 **Contact**
+## 📞 **Contact**  
 
 For queries, feel free to reach out:  
-- **Developers**:
+- **Developers**: 
   - Vaibhav Katariya
   - Yasharth Singh
   - Rajat Dagar
   - Rochak Kumar
   - Lakshay Gupta
-
----
-
-## 📸 **Demo Images and Videos**
-
-### Chat Demo Screenshots:
-
-![Chat demo](/readme%20files/chat.jpg)
-
-### AI Chatbot Video:
-
-![Chat bot demo](/readme%20files/chatbot.mp4)
-
-### OCR Medicine Extractor Demo:
-
-![OCR demo](/readme%20files/ocr.jpg)
